@@ -521,22 +521,22 @@ let batch_list = move || app_state.get().batch_list.get();
                 <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
                     <h2 class="text-xl font-bold mb-4">"选择批次"</h2>
                     <div class="space-y-2">
-                    <For
-    each=move || batch_list().into_iter().enumerate()
-    key=|(_idx, batch)| batch.code.clone()
-    children=move |(idx, batch)| {
-        let handle_select = handle_batch_select.clone();
-        view! {
-            <button
-                class="w-full text-left px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded disabled:opacity-50"
-                on:click=move |_| handle_select(idx)
-                disabled=move || is_enrolling.get()
-            >
-                {format!("{} - {} (批次 {})", batch.code, batch.name, idx + 1)}
-            </button>
-        }
-    }
-/>
+                        <For
+                            each=move || batch_list().into_iter().enumerate()
+                            key=|(_idx, batch)| batch.code.clone()
+                            children=move |(idx, batch)| {
+                                let handle_select = handle_batch_select.clone();
+                                view! {
+                                    <button
+                                        class="w-full text-left px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded disabled:opacity-50"
+                                        on:click=move |_| handle_select(idx)
+                                        disabled=move || is_enrolling.get()
+                                    >
+                                        {format!("{} - {} (批次 {})", batch.code, batch.name, idx + 1)}
+                                    </button>
+                                }
+                            }
+                        />
                     </div>
                 </div>
             </div>
