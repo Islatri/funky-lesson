@@ -14,6 +14,7 @@ pub async fn main() -> std::io::Result<()> {
     
     HttpServer::new(|| {
         let cors = Cors::default()
+.allowed_origin("http://tauri.localhost")
             .allowed_origin("http://localhost:1420")
             .allowed_methods(vec!["GET", "POST", "OPTIONS"])
             .allowed_headers(vec![
