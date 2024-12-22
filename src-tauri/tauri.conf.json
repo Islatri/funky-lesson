@@ -13,20 +13,12 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "funky-lesson",
+        "title": "FunkyLesson",
         "width": 800,
         "height": 600
       }
     ],
     "security": {
-      "headers": {
-        "Cross-Origin-Opener-Policy": "same-origin",
-        "Cross-Origin-Embedder-Policy": "require-corp",
-        "Timing-Allow-Origin": [
-          "https://icourses.jlu.edu.cn/*"
-        ],
-        "X-Content-Type-Options": null
-      },
       "csp": null
     }
   },

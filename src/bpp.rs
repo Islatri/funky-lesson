@@ -76,11 +76,11 @@ pub async fn login(
     request::create_client().await?;
     
     // 获取AES密钥
-    let aes_key = request::get_aes_key().await?;
+    let aes_key = request::get_aes_key_proxy().await?;
     
     // 加密密码并登录
     let encrypted_password = crypto::encrypt_password(password, &aes_key)?;
-    let login_resp = request::send_login_request(
+    let login_resp = request::send_login_request_proxy(
         username,
         &encrypted_password,
         captcha,
@@ -108,7 +108,7 @@ pub async fn login(
 
 // 获取验证码
 pub async fn get_captcha() -> Result<(String, String)> {
-    request::get_captcha().await
+    request::get_captcha_proxy().await
 }
 
 // 设置选课批次
