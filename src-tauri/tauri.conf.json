@@ -19,6 +19,14 @@
       }
     ],
     "security": {
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Timing-Allow-Origin": [
+          "https://icourses.jlu.edu.cn/*"
+        ],
+        "X-Content-Type-Options": null
+      },
       "csp": null
     }
   },

@@ -1,0 +1,10 @@
+[package]
+name = "src-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12.9", default-features = false, features = ["rustls-tls","json", "cookies"]}
+actix-web = "4.9.0"
+actix-cors = "0.7.0"
+serde_json = "1.0.134"
