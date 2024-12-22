@@ -1,7 +1,18 @@
-# Tauri + Leptos
+# Funky Lesson 自动选课应用
 
-This template should help get you started developing with Tauri and Leptos.
+实际上也彻底投降了，选课网站的CORS十分严格，Web应用无法直接访问选课网站的API。
 
-## Recommended IDE Setup
+上代理服务器试了一会儿，还没调通，但是感到很唐，因为服务端的请求本来就是已经写完了的，再写一个说实话和用tauri区别不大了
 
-[VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+当初为了避开tauri，最主要的原因是因为tauri::command不支持流式传输，所以就想用wasm的网络请求库直接再leptos那边请求并且拿到响应
+
+结果难绷了，因为CORS的问题，前端无法直接请求选课网站，这下过tauri或者过proxy都是要中介一个流了，proxy可能还稍微能实现一点实时性
+
+唉，最后再试试吧，不行就火速切一下solid了事，也算是leptos的Web应用的又一次尝试了
+
+---
+并且Leptos对GRPC的支持也不够完善，用代理的话也没法很好的流式显示选课结果
+
+我觉得更好的解决肯定还就直接上vite系的前端框架了，对grpc的支持更好
+
+就可以通过core->grpc->ui的方式来实现选课的实时显示，验证码之类的倒是可以直接前端拿到，这个没CORS

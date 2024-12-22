@@ -142,8 +142,8 @@ pub async fn get_courses(app_state: &AppState) -> Result<()> {
     let batch_id = app_state.batch_id.get()
         .ok_or_else(|| ErrorKind::ParseError("No batch id selected".to_string()))?;
 
-    let selected = request::get_selected_courses(&token, &batch_id).await?;
-    let favorite = request::get_favorite_courses(&token, &batch_id).await?;
+    let selected = request::get_selected_courses_proxy(&token, &batch_id).await?;
+    let favorite = request::get_favorite_courses_proxy(&token, &batch_id).await?;
 
     let selected_courses: Vec<CourseInfo> = if selected["code"] == 200 {
         serde_json::from_value(selected["data"].clone())?
@@ -206,7 +206,7 @@ pub async fn enroll_courses(
                 });
 
                 // 尝试选课
-                let result = request::select_course(
+                let result = request::select_course_proxy(
                     &token,
                     &batch_id,
                     &course.teaching_class_type.clone().unwrap_or_default(),
@@ -435,7 +435,7 @@ let batch_list = move || app_state.get().batch_list.get();
 
     view! {
         <main class="container mx-auto px-4 py-8">
-            <h1 class="text-3xl font-bold mb-8 text-center">"自动抢课系统"</h1>
+            <h1 class="text-3xl font-bold mb-8 text-center">"FunkyLesson自动抢课！(๑˃ᴗ˂)ﻭ"</h1>
 
             // 状态消息
             <div class="mb-4 text-center">

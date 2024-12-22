@@ -19,4 +19,4 @@ gloo-timers = {version="0.3.0",features=["futures"]}
 funky_lesson_core = { path = "../funky_lesson_core",default-features = false, features = ["wasm", "gui"] , alias = "funky_lesson_core_web"}
 
 [workspace]
-members = [ "src-proxy","src-tauri"]
+members = ["src-tauri"]
