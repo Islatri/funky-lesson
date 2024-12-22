@@ -23,4 +23,5 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-funky_lesson_core = { path = "../../funky_lesson_core" }
+base64-simd = "0.8.0"
+funky_lesson_core = { path = "../../funky_lesson_core",default-features = false, features = ["no-wasm", "gui"] }
