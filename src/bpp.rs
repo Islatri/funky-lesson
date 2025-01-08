@@ -188,7 +188,7 @@ pub async fn enroll_courses(
     let courses_count = courses.len();
     
     // 创建工作任务
-    for thread_id in 0..8 {
+    for thread_id in 0..12 {
         let token = token.clone();
         let batch_id = batch_id.clone();
         let courses = courses.clone();
@@ -261,7 +261,7 @@ pub async fn enroll_courses(
                 course_idx = (course_idx + 1) % courses_count;
                 
                 // 短暂延迟避免请求过快
-                set_timeout(|| {}, 500).await;
+                set_timeout(|| {}, 200).await;
             }
         });
     }

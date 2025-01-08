@@ -17,7 +17,7 @@ pub async fn main() -> std::io::Result<()> {
             .allowed_origin("http://tauri.localhost")
             .allowed_origin("http://localhost:1420")
             .allowed_origin("http://127.0.0.1:1420")
-            .allowed_origin("file://")
+            // .allowed_origin("file://")
             .allowed_methods(vec!["GET", "POST", "OPTIONS"])
             .allowed_headers(vec![
                 "Authorization",
