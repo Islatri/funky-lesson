@@ -4,8 +4,8 @@ mod app;
 mod bpp;
 use bpp::*;
 
-use leptos::*;
 use leptos::mount::mount_to_body;
+use leptos::*;
 
 fn main() {
     _ = console_log::init_with_level(log::Level::Debug);

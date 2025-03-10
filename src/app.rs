@@ -1,8 +1,8 @@
+use gloo_timers::future::TimeoutFuture;
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::*;
-use gloo_timers::future::TimeoutFuture;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -102,28 +102,29 @@ pub fn App() -> impl IntoView {
         invoke("initialize_client", JsValue::NULL).await;
     });
 
-    
     // 获取验证码
     let handle_get_captcha = move |_| {
         spawn_local(async move {
             let result = invoke("get_captcha", JsValue::NULL).await;
-            let captcha_response: Result<CaptchaResponse, _> = serde_wasm_bindgen::from_value(result);
-            
+            let captcha_response: Result<CaptchaResponse, _> =
+                serde_wasm_bindgen::from_value(result);
+
             match captcha_response {
                 Ok(response) => {
-                // 先设置 UUID
-                set_captcha_uuid.set(response.uuid);
-                
-                // 确保 base64 数据没有前缀
-                let image_data = response.image_base64.trim();
-                
-                // 设置完整的 data URL
-                let image_src = format!("data:image/png;base64,{}", image_data);
-                console_log("image_src set to:", serde_wasm_bindgen::to_value(&image_src).unwrap());
+                    // 先设置 UUID
+                    set_captcha_uuid.set(response.uuid);
 
-                set_captcha_image_src.set(image_src);
-                
-    
+                    // 确保 base64 数据没有前缀
+                    let image_data = response.image_base64.trim();
+
+                    // 设置完整的 data URL
+                    let image_src = format!("data:image/png;base64,{}", image_data);
+                    console_log(
+                        "image_src set to:",
+                        serde_wasm_bindgen::to_value(&image_src).unwrap(),
+                    );
+
+                    set_captcha_image_src.set(image_src);
                 }
                 Err(e) => {
                     set_status_message.set(format!("获取验证码失败：{}", e));
@@ -135,7 +136,7 @@ pub fn App() -> impl IntoView {
     // 登录处理
     let handle_login = move |ev: SubmitEvent| {
         ev.prevent_default();
-            // 表单验证
+        // 表单验证
         if username.get().is_empty() {
             set_status_message.set("请输入用户名".to_string());
             return;
@@ -156,10 +157,14 @@ pub fn App() -> impl IntoView {
                 captcha: captcha.get(),
                 uuid: captcha_uuid.get(),
             };
-            
-            let result = invoke("login_command", serde_wasm_bindgen::to_value(&args).unwrap()).await;
+
+            let result = invoke(
+                "login_command",
+                serde_wasm_bindgen::to_value(&args).unwrap(),
+            )
+            .await;
             let login_response: Result<LoginResponse, _> = serde_wasm_bindgen::from_value(result);
-            
+
             match login_response {
                 Ok(response) => {
                     set_batch_list.set(response.batch_list);
@@ -182,19 +187,19 @@ pub fn App() -> impl IntoView {
             let args = EnrollArgs {
                 favorite_courses: favorite_courses.get(),
             };
-            
+
             while is_enrolling.get() {
                 let result = invoke(
                     "enroll_courses_command",
-                    serde_wasm_bindgen::to_value(&args).unwrap()
-                ).await;
+                    serde_wasm_bindgen::to_value(&args).unwrap(),
+                )
+                .await;
                 let status: Result<EnrollmentStatus, _> = serde_wasm_bindgen::from_value(result);
-                
+
                 match status {
                     Ok(status) => {
                         set_total_requests.set(status.total_requests);
                         set_course_statuses.set(status.course_statuses);
-                        
                     }
                     Err(e) => {
                         set_status_message.set(format!("抢课出错：{}", e));
@@ -202,9 +207,9 @@ pub fn App() -> impl IntoView {
                         break;
                     }
                 }
-                
+
                 // 短暂延迟，避免请求过快
-                
+
                 TimeoutFuture::new(100).await;
             }
         });
@@ -258,8 +263,7 @@ pub fn App() -> impl IntoView {
         });
     };
 
-    Effect::new(move|_| handle_get_captcha(()));
-
+    Effect::new(move |_| handle_get_captcha(()));
 
     view! {
         <main class="container mx-auto px-4 py-8">
@@ -308,7 +312,7 @@ pub fn App() -> impl IntoView {
                             on:input=move |ev| set_password.set(event_target_value(&ev))
                         />
                     </div>
-                    
+
                      // 验证码部分
                      <div class="mb-4">
                      <div class="flex items-center justify-between mb-2">
@@ -439,7 +443,7 @@ pub fn App() -> impl IntoView {
                             </div>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
         </main>

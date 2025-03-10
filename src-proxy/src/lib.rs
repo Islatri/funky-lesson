@@ -1,17 +1,17 @@
-use actix_web::{web, App, HttpServer, HttpRequest, HttpResponse};
 use actix_cors::Cors;
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
-use serde_json::json;
 use serde::Deserialize;
-use log::{info, error, debug, warn};
+use serde_json::json;
 use std::collections::HashMap;
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
-    
+
     info!("Starting universal proxy server at http://127.0.0.1:3030");
-    
+
     HttpServer::new(|| {
         let cors = Cors::default()
             .allowed_origin("http://tauri.localhost")
@@ -29,14 +29,12 @@ pub async fn main() -> std::io::Result<()> {
             ])
             .supports_credentials()
             .max_age(3600);
-            
-        App::new()
-            .wrap(cors)
-            .service(
-                web::resource("/api/proxy/{endpoint:.*}")
-                    .route(web::post().to(proxy_handler))
-                    .route(web::get().to(proxy_handler_get))
-            )
+
+        App::new().wrap(cors).service(
+            web::resource("/api/proxy/{endpoint:.*}")
+                .route(web::post().to(proxy_handler))
+                .route(web::get().to(proxy_handler_get)),
+        )
     })
     .bind("127.0.0.1:3030")?
     .run()
@@ -67,10 +65,7 @@ struct ProxyRequest {
     uuid: Option<String>,
 }
 
-async fn proxy_handler_get(
-    req: HttpRequest,
-    path: web::Path<String>,
-) -> HttpResponse {
+async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpResponse {
     let endpoint = path.into_inner();
     debug!("Handling GET proxy request for endpoint: {}", endpoint);
 
@@ -82,9 +77,11 @@ async fn proxy_handler_get(
     // 获取原始URL
     let original_url = match endpoint.as_str() {
         "profile/index.html" => "https://icourses.jlu.edu.cn/xsxk/profile/index.html",
-        _ => return HttpResponse::BadRequest().json(json!({
-            "error": "Invalid endpoint for GET request"
-        }))
+        _ => {
+            return HttpResponse::BadRequest().json(json!({
+                "error": "Invalid endpoint for GET request"
+            }))
+        }
     };
 
     let auth_token = match req.headers().get(actix_web::http::header::AUTHORIZATION) {
@@ -102,42 +99,32 @@ async fn proxy_handler_get(
 
     let mut headers = HeaderMap::new();
     if let Some(token) = auth_token {
-        headers.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&token).unwrap()
-        );
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
     }
 
     debug!("Sending GET request to: {}", original_url);
-    
-    match client.get(original_url)
-        .headers(headers)
-        .send()
-        .await {
-            Ok(response) => {
-                let status = response.status();
-                debug!("Received response with status: {}", status);
 
-                match response.text().await {
-                    Ok(text) => {
-                        HttpResponse::Ok()
-                            .content_type("text/html")
-                            .body(text)
-                    },
-                    Err(e) => {
-                        error!("Failed to get response text: {}", e);
-                        HttpResponse::InternalServerError().json(json!({
-                            "error": format!("Failed to read response: {}", e)
-                        }))
-                    }
+    match client.get(original_url).headers(headers).send().await {
+        Ok(response) => {
+            let status = response.status();
+            debug!("Received response with status: {}", status);
+
+            match response.text().await {
+                Ok(text) => HttpResponse::Ok().content_type("text/html").body(text),
+                Err(e) => {
+                    error!("Failed to get response text: {}", e);
+                    HttpResponse::InternalServerError().json(json!({
+                        "error": format!("Failed to read response: {}", e)
+                    }))
                 }
-            },
-            Err(e) => {
-                error!("Request failed: {}", e);
-                HttpResponse::InternalServerError().json(json!({
-                    "error": format!("Request failed: {}", e)
-                }))
             }
+        }
+        Err(e) => {
+            error!("Request failed: {}", e);
+            HttpResponse::InternalServerError().json(json!({
+                "error": format!("Request failed: {}", e)
+            }))
+        }
     }
 }
 
@@ -170,10 +157,7 @@ async fn proxy_handler(
 
     let mut headers = HeaderMap::new();
     if let Some(token) = auth_token {
-        headers.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&token).unwrap()
-        );
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
     }
 
     // 构建请求体
@@ -215,7 +199,7 @@ async fn proxy_handler(
     debug!("Request body: {:?}", request_body);
 
     let mut request = client.post(&body.original_url).headers(headers);
-    
+
     // 添加请求体或查询参数
     if !request_body.is_empty() {
         request = request.query(&request_body);
@@ -233,19 +217,18 @@ async fn proxy_handler(
                 Ok(text) => {
                     debug!("Response text: {}", text);
                     match serde_json::from_str::<serde_json::Value>(&text) {
-                        Ok(json_value) => {
-                            HttpResponse::Ok()
-                                .content_type("application/json")
-                                .json(json_value)
-                        },
+                        Ok(json_value) => HttpResponse::Ok()
+                            .content_type("application/json")
+                            .json(json_value),
                         Err(e) => {
-                            warn!("Failed to parse response as JSON: {}, returning raw text", e);
-                            HttpResponse::Ok()
-                                .content_type("text/plain")
-                                .body(text)
+                            warn!(
+                                "Failed to parse response as JSON: {}, returning raw text",
+                                e
+                            );
+                            HttpResponse::Ok().content_type("text/plain").body(text)
                         }
                     }
-                },
+                }
                 Err(e) => {
                     error!("Failed to get response text: {}", e);
                     HttpResponse::InternalServerError().json(json!({
@@ -253,7 +236,7 @@ async fn proxy_handler(
                     }))
                 }
             }
-        },
+        }
         Err(e) => {
             error!("Request failed: {}", e);
             HttpResponse::InternalServerError().json(json!({
@@ -273,9 +256,9 @@ async fn proxy_handler(
 // #[actix_web::main]
 // pub async fn main() -> std::io::Result<()> {
 //     env_logger::init_from_env(env_logger::Env::default().default_filter_or("debug"));
-    
+
 //     info!("Starting universal proxy server at http://127.0.0.1:3030");
-    
+
 //     HttpServer::new(|| {
 //         let cors = Cors::default()
 // .allowed_origin("http://tauri.localhost")
@@ -291,7 +274,7 @@ async fn proxy_handler(
 //             ])
 //             .supports_credentials()
 //             .max_age(3600);
-            
+
 //         App::new()
 //             .wrap(cors)
 //             .service(
@@ -434,4 +417,3 @@ async fn proxy_handler(
 //         }
 //     }
 // }
- 

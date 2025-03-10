@@ -1,12 +1,12 @@
-use leptos::*;
-use leptos::prelude::*;
-use leptos::task::spawn_local;
-use serde::{Deserialize, Serialize};
 use funky_lesson_core::{
     crypto,
+    error::{ErrorKind, Result},
     request,
-    error::{Result, ErrorKind}
 };
+use leptos::prelude::*;
+use leptos::task::spawn_local;
+use leptos::*;
+use serde::{Deserialize, Serialize};
 
 // 数据模型保持不变
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -22,9 +22,9 @@ pub struct BatchInfo {
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CourseInfo {
-    pub SKJS: String,     // 教师名
-    pub KCM: String,      // 课程名
-    pub JXBID: String,    // 教学班ID
+    pub SKJS: String,  // 教师名
+    pub KCM: String,   // 课程名
+    pub JXBID: String, // 教学班ID
     #[serde(rename = "teachingClassType")]
     pub teaching_class_type: Option<String>,
     #[serde(default, rename = "secretVal")]
@@ -74,28 +74,23 @@ pub async fn login(
 ) -> Result<()> {
     // 初始化
     request::create_client().await?;
-    
+
     // 获取AES密钥
     let aes_key = request::get_aes_key_proxy().await?;
-    
+
     // 加密密码并登录
     let encrypted_password = crypto::encrypt_password(password, &aes_key)?;
-    let login_resp = request::send_login_request_proxy(
-        username,
-        &encrypted_password,
-        captcha,
-        uuid
-    ).await?;
+    let login_resp =
+        request::send_login_request_proxy(username, &encrypted_password, captcha, uuid).await?;
 
     if login_resp["code"] == 200 && login_resp["msg"] == "登录成功" {
         let token = login_resp["data"]["token"]
             .as_str()
             .ok_or_else(|| ErrorKind::ParseError("Invalid token".to_string()))?
             .to_string();
-            
-        let batch_list: Vec<BatchInfo> = serde_json::from_value(
-            login_resp["data"]["student"]["electiveBatchList"].clone()
-        )?;
+
+        let batch_list: Vec<BatchInfo> =
+            serde_json::from_value(login_resp["data"]["student"]["electiveBatchList"].clone())?;
 
         // 更新状态
         app_state.token.set(Some(token));
@@ -112,14 +107,13 @@ pub async fn get_captcha() -> Result<(String, String)> {
 }
 
 // 设置选课批次
-pub async fn set_batch(
-    batch_idx: usize,
-    app_state: &AppState,
-) -> Result<()> {
-    let token = app_state.token.get()
+pub async fn set_batch(batch_idx: usize, app_state: &AppState) -> Result<()> {
+    let token = app_state
+        .token
+        .get()
         .ok_or_else(|| ErrorKind::ParseError("No token available".to_string()))?;
     let batch_list = app_state.batch_list.get();
-    
+
     if batch_idx >= batch_list.len() {
         return Err(ErrorKind::ParseError("Invalid batch index".to_string()).into());
     }
@@ -137,9 +131,13 @@ pub async fn set_batch(
 
 // 获取课程列表
 pub async fn get_courses(app_state: &AppState) -> Result<()> {
-    let token = app_state.token.get()
+    let token = app_state
+        .token
+        .get()
         .ok_or_else(|| ErrorKind::ParseError("No token available".to_string()))?;
-    let batch_id = app_state.batch_id.get()
+    let batch_id = app_state
+        .batch_id
+        .get()
         .ok_or_else(|| ErrorKind::ParseError("No batch id selected".to_string()))?;
 
     let selected = request::get_selected_courses_proxy(&token, &batch_id).await?;
@@ -172,21 +170,26 @@ pub async fn enroll_courses(
         return Ok(());
     }
 
-    let token = app_state.token.get()
+    let token = app_state
+        .token
+        .get()
         .ok_or_else(|| ErrorKind::ParseError("No token available".to_string()))?;
-    let batch_id = app_state.batch_id.get()
+    let batch_id = app_state
+        .batch_id
+        .get()
         .ok_or_else(|| ErrorKind::ParseError("No batch id selected".to_string()))?;
 
     app_state.should_continue.set(true);
     app_state.enrollment_status.update(|status| {
         status.is_running = true;
-        status.course_statuses = courses.iter()
+        status.course_statuses = courses
+            .iter()
             .map(|c| format!("[{}]等待中", c.KCM))
             .collect();
     });
 
     let courses_count = courses.len();
-    
+
     // 创建工作任务
     for thread_id in 0..12 {
         let token = token.clone();
@@ -196,10 +199,10 @@ pub async fn enroll_courses(
 
         spawn_local(async move {
             let mut course_idx = thread_id % courses_count;
-            
+
             while app_state.should_continue.get() {
                 let course = &courses[course_idx];
-                
+
                 // 更新状态
                 app_state.enrollment_status.update(|status| {
                     status.total_requests += 1;
@@ -211,41 +214,42 @@ pub async fn enroll_courses(
                     &batch_id,
                     &course.teaching_class_type.clone().unwrap_or_default(),
                     &course.JXBID,
-                    &course.secret_val.clone().unwrap_or_default()
-                ).await;
+                    &course.secret_val.clone().unwrap_or_default(),
+                )
+                .await;
 
                 match result {
                     Ok(json) => {
                         let code = json["code"].as_i64().unwrap_or(0);
                         let msg = json["msg"].as_str().unwrap_or("");
-                        
+
                         let status = match (code, msg) {
                             (200, _) => {
                                 app_state.should_continue.set(false);
                                 "选课成功"
-                            },
+                            }
                             (500, "该课程已在选课结果中") => {
                                 app_state.should_continue.set(false);
                                 "已选"
-                            },
+                            }
                             (500, "本轮次选课暂未开始") => "未开始",
                             (500, "课容量已满") if !try_if_capacity_full => {
                                 app_state.should_continue.set(false);
                                 "已满"
-                            },
+                            }
                             (500, "课容量已满") => "等待中",
                             (500, "参数校验不通过") => "参数错误",
                             (401, _) => {
                                 app_state.should_continue.set(false);
                                 "未登录"
-                            },
-                            _ => "失败"
+                            }
+                            _ => "失败",
                         };
 
                         app_state.enrollment_status.update(|s| {
                             s.course_statuses[course_idx] = format!("[{}]{}", course.KCM, status);
                         });
-                    },
+                    }
                     Err(e) => {
                         app_state.enrollment_status.update(|s| {
                             s.course_statuses[course_idx] = format!("[{}]请求错误", course.KCM);
@@ -259,7 +263,7 @@ pub async fn enroll_courses(
                 }
 
                 course_idx = (course_idx + 1) % courses_count;
-                
+
                 // 短暂延迟避免请求过快
                 set_timeout(|| {}, 200).await;
             }
@@ -279,10 +283,10 @@ pub fn stop_enrollment(app_state: &AppState) {
 
 // Leptos组件示例
 #[component]
-pub fn EnrollmentPanel( app_state: AppState) -> impl IntoView {
+pub fn EnrollmentPanel(app_state: AppState) -> impl IntoView {
     let enrollment_status = app_state.enrollment_status;
-    
-    view! { 
+
+    view! {
         <div class="p-4 border rounded shadow-sm mt-6">
             <h2 class="text-xl font-medium mb-4">"选课状态"</h2>
             <div class="text-gray-600 mb-4">
@@ -292,7 +296,7 @@ pub fn EnrollmentPanel( app_state: AppState) -> impl IntoView {
                 <For
                     each=move || enrollment_status.get().course_statuses.clone()
                     key=|status| status.clone()
-                    children=move | status| view! { 
+                    children=move | status| view! {
                         <div class="p-2 bg-gray-50 rounded">
                             {status}
                         </div>
@@ -305,15 +309,12 @@ pub fn EnrollmentPanel( app_state: AppState) -> impl IntoView {
 
 // Utility functions
 async fn set_timeout(f: impl FnOnce() + 'static, ms: i32) {
-    use wasm_bindgen_futures::JsFuture;
     use wasm_bindgen::prelude::*;
+    use wasm_bindgen_futures::JsFuture;
     let promise = js_sys::Promise::new(&mut |resolve, _| {
         web_sys::window()
             .unwrap()
-            .set_timeout_with_callback_and_timeout_and_arguments_0(
-                &resolve,
-                ms,
-            )
+            .set_timeout_with_callback_and_timeout_and_arguments_0(&resolve, ms)
             .unwrap();
     });
     JsFuture::from(promise).await.unwrap();
@@ -321,117 +322,119 @@ async fn set_timeout(f: impl FnOnce() + 'static, ms: i32) {
 
 #[component]
 pub fn App() -> impl IntoView {
-// 把 app_state 转换为 Resource
-let app_state = RwSignal::new(AppState::new());
-    
-let (username, set_username) = signal(String::new());
-let (password, set_password) = signal(String::new());
-let (captcha, set_captcha) = signal(String::new());
-let (captcha_image_src, set_captcha_image_src) = signal(String::new());
-let (captcha_uuid, set_captcha_uuid) = signal(String::new());
-let (status_message, set_status_message) = signal(String::new());
-let (step, set_step) = signal(1);
-let (is_enrolling, set_is_enrolling) = signal(false);
+    // 把 app_state 转换为 Resource
+    let app_state = RwSignal::new(AppState::new());
 
-// 获取验证码
-let handle_get_captcha = move |_| {
-    spawn_local(async move {
-        match get_captcha().await {
-            Ok((uuid, captcha_b64)) => {
-                set_captcha_uuid.set(uuid);
-                // let image_src = format!("data:image/png;base64,{}", captcha_b64);
-                let image_src = format!("{}", captcha_b64);
-                set_captcha_image_src.set(image_src);
-            }
-            Err(e) => {
-                set_status_message.set(format!("获取验证码失败：{:?}", e));
-            }
-        }
-    });
-};
+    let (username, set_username) = signal(String::new());
+    let (password, set_password) = signal(String::new());
+    let (captcha, set_captcha) = signal(String::new());
+    let (captcha_image_src, set_captcha_image_src) = signal(String::new());
+    let (captcha_uuid, set_captcha_uuid) = signal(String::new());
+    let (status_message, set_status_message) = signal(String::new());
+    let (step, set_step) = signal(1);
+    let (is_enrolling, set_is_enrolling) = signal(false);
 
-// 登录处理
-let handle_login = move |ev: web_sys::SubmitEvent| {
-    ev.prevent_default();
-    
-    if username.get().is_empty() {
-        set_status_message.set("请输入用户名".to_string());
-        return;
-    }
-    if password.get().is_empty() {
-        set_status_message.set("请输入密码".to_string());
-        return;
-    }
-    if captcha.get().is_empty() {
-        set_status_message.set("请输入验证码".to_string());
-        return;
-    }
-
-    let current_state = app_state.get();
-    spawn_local(async move {
-        match login(
-            &username.get(),
-            &password.get(),
-            &captcha.get(),
-            &captcha_uuid.get(),
-            &current_state
-        ).await {
-            Ok(()) => {
-                set_step.set(2);
-                set_status_message.set("登录成功！".to_string());
-            }
-            Err(e) => {
-                set_status_message.set(format!("登录失败：{:?}", e));
-                handle_get_captcha(());
-            }
-        }
-    });
-};
-
-// 选择批次
-// 修改批次选择的处理逻辑
-let handle_batch_select = move |idx: usize| {
-    let current_state = app_state.get();
-    set_status_message.set("正在设置批次...".to_string());
-    
-    spawn_local(async move {
-        match set_batch(idx, &current_state).await {
-            Ok(()) => {
-                set_step.set(3);
-                match get_courses(&current_state).await {
-                    Ok(()) => set_status_message.set("获取课程成功".to_string()),
-                    Err(e) => set_status_message.set(format!("获取课程失败：{:?}", e)),
+    // 获取验证码
+    let handle_get_captcha = move |_| {
+        spawn_local(async move {
+            match get_captcha().await {
+                Ok((uuid, captcha_b64)) => {
+                    set_captcha_uuid.set(uuid);
+                    // let image_src = format!("data:image/png;base64,{}", captcha_b64);
+                    let image_src = format!("{}", captcha_b64);
+                    set_captcha_image_src.set(image_src);
+                }
+                Err(e) => {
+                    set_status_message.set(format!("获取验证码失败：{:?}", e));
                 }
             }
-            Err(e) => set_status_message.set(format!("选择批次失败：{:?}", e)),
+        });
+    };
+
+    // 登录处理
+    let handle_login = move |ev: web_sys::SubmitEvent| {
+        ev.prevent_default();
+
+        if username.get().is_empty() {
+            set_status_message.set("请输入用户名".to_string());
+            return;
         }
-    });
-};
-// 开始抢课
-let handle_enroll = move |_| {
-    set_is_enrolling.set(true);
-    let current_state = app_state.get();
-    spawn_local(async move {
-        let courses = current_state.favorite_courses.get();
-        if let Err(e) = enroll_courses(courses, true, &current_state).await {
-            set_status_message.set(format!("抢课出错：{:?}", e));
-            set_is_enrolling.set(false);
+        if password.get().is_empty() {
+            set_status_message.set("请输入密码".to_string());
+            return;
         }
-    });
-};
+        if captcha.get().is_empty() {
+            set_status_message.set("请输入验证码".to_string());
+            return;
+        }
 
-// 停止抢课
-let handle_stop_enroll = move |_| {
-    set_is_enrolling.set(false);
-    let current_state = app_state.get();
-    stop_enrollment(&current_state);
-};
+        let current_state = app_state.get();
+        spawn_local(async move {
+            match login(
+                &username.get(),
+                &password.get(),
+                &captcha.get(),
+                &captcha_uuid.get(),
+                &current_state,
+            )
+            .await
+            {
+                Ok(()) => {
+                    set_step.set(2);
+                    set_status_message.set("登录成功！".to_string());
+                }
+                Err(e) => {
+                    set_status_message.set(format!("登录失败：{:?}", e));
+                    handle_get_captcha(());
+                }
+            }
+        });
+    };
 
-// 初始化时获取验证码
-Effect::new(move |_| handle_get_captcha(()));
+    // 选择批次
+    // 修改批次选择的处理逻辑
+    let handle_batch_select = move |idx: usize| {
+        let current_state = app_state.get();
+        set_status_message.set("正在设置批次...".to_string());
 
-// 在使用 batch_list 时使用 app_state
-let batch_list = move || app_state.get().batch_list.get();
+        spawn_local(async move {
+            match set_batch(idx, &current_state).await {
+                Ok(()) => {
+                    set_step.set(3);
+                    match get_courses(&current_state).await {
+                        Ok(()) => set_status_message.set("获取课程成功".to_string()),
+                        Err(e) => set_status_message.set(format!("获取课程失败：{:?}", e)),
+                    }
+                }
+                Err(e) => set_status_message.set(format!("选择批次失败：{:?}", e)),
+            }
+        });
+    };
+    // 开始抢课
+    let handle_enroll = move |_| {
+        set_is_enrolling.set(true);
+        let current_state = app_state.get();
+        spawn_local(async move {
+            let courses = current_state.favorite_courses.get();
+            if let Err(e) = enroll_courses(courses, true, &current_state).await {
+                set_status_message.set(format!("抢课出错：{:?}", e));
+                set_is_enrolling.set(false);
+            }
+        });
+    };
+
+    // 停止抢课
+    let handle_stop_enroll = move |_| {
+        set_is_enrolling.set(false);
+        let current_state = app_state.get();
+        stop_enrollment(&current_state);
+    };
+
+    // 初始化时获取验证码
+    Effect::new(move |_| handle_get_captcha(()));
+
+    // 在使用 batch_list 时使用 app_state
+    let batch_list = move || app_state.get().batch_list.get();
 
     view! {
         <main class="container mx-auto px-4 py-8">
