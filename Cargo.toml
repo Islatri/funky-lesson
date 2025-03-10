@@ -5,15 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-leptos = { version = "0.7.2", features = ["csr"] }
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
+leptos = { version = "0.7.7", features = ["csr"] }
+wasm-bindgen = "0.2.100"
+wasm-bindgen-futures = "0.4.50"
 serde-wasm-bindgen = "0.6.5"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-console_log = { version = "1.0", features = ["color"] }
-log = "0.4"
-js-sys = "0.3"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+console_log = { version = "1.0.0", features = ["color"] }
+log = "0.4.26"
+js-sys = "0.3.77"
 console_error_panic_hook = "0.1.7"
 gloo-timers = {version="0.3.0",features=["futures"]}
 funky_lesson_core = { path = "../funky_lesson_core",default-features = false, features = ["wasm", "gui"] , alias = "funky_lesson_core_web"}
