@@ -1,6 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.funky_lesson" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.hakopools" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
+        <!-- 允许应用内容延伸到刘海区域 -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
+        <!-- 设置状态栏透明 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <!-- 设置导航栏透明 -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- 启用全屏模式 -->
+        <item name="android:windowFullscreen">false</item>
+        <!-- 允许内容绘制在系统栏后面 -->
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 </resources>

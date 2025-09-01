@@ -8,8 +8,4 @@ max_width = 100
 # 基本格式化
 reorder_imports = true
 reorder_modules = true
-fn_params_layout = "Tall"
-trailing_comma = "Vertical"
-
-# 简化配置 - 使用默认值
-unstable_features = false
+# 移除不稳定特性，只使用稳定版本支持的配置

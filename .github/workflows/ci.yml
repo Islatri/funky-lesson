@@ -27,6 +27,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # 安装 Linux 系统依赖
+      - name: Install Linux deps
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
+
       # 快速检查格式和基本编译
       - name: Format & Check
         run: |
@@ -67,7 +71,7 @@ jobs:
 
       - name: Install Linux deps
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
 
       - uses: actions/setup-node@v4
         with:
