@@ -1,7 +1,7 @@
 use actix_cors::Cors;
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{App, HttpRequest, HttpResponse, HttpServer, web};
 use log::{debug, error, info, warn};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -80,7 +80,7 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
         _ => {
             return HttpResponse::BadRequest().json(json!({
                 "error": "Invalid endpoint for GET request"
-            }))
+            }));
         }
     };
 

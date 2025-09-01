@@ -19,7 +19,7 @@
 
 /* 滚动条滑块 */
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3); /* 浅灰色，低透明度 */
+  background: rgba(156, 163, 175, 0.1); /* 默认状态下滚动条几乎不可见 */
   border-radius: 3px;
   transition: all 0.2s ease-in-out; /* 平滑过渡动画 */
 }
@@ -47,6 +47,9 @@
 * {
   scrollbar-width: thin; /* 纤细滚动条 */
   scrollbar-color: rgba(156, 163, 175, 0.3) transparent; /* 滑块颜色 轨道颜色 */
+    /* 优化滚动性能 */
+  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+
 }
 
 /* ==========================================================================
@@ -56,21 +59,13 @@
 html {
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+    /* 平滑滚动 */
+  scroll-behavior: smooth;
 }
 
 /* ==========================================================================
    增强的滚动体验
    ========================================================================== */
-
-/* 平滑滚动 */
-html {
-  scroll-behavior: smooth;
-}
-
-/* 优化滚动性能 */
-* {
-  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
-}
 
 /* ==========================================================================
    特定容器的滚动条样式
@@ -104,10 +99,7 @@ code::-webkit-scrollbar-thumb {
    悬停时显示滚动条 (更加隐蔽的设计)
    ========================================================================== */
 
-/* 默认状态下滚动条几乎不可见 */
-::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.1);
-}
+/* 默认状态下滚动条几乎不可见 - 已合并到主 ::-webkit-scrollbar-thumb 规则 */
 
 /* 容器悬停时显示滚动条 */
 *:hover::-webkit-scrollbar-thumb {

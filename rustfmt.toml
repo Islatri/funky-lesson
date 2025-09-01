@@ -1,0 +1,15 @@
+# 精简的Rustfmt配置
+
+edition = "2021"
+hard_tabs = false
+tab_spaces = 4
+max_width = 100
+
+# 基本格式化
+reorder_imports = true
+reorder_modules = true
+fn_params_layout = "Tall"
+trailing_comma = "Vertical"
+
+# 简化配置 - 使用默认值
+unstable_features = false

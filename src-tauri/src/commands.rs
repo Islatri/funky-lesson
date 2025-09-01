@@ -1,11 +1,11 @@
 // commands.rs
-use funky_lesson_core::app::request::gui::{enroll_courses, login};
-use funky_lesson_core::app::request::{get_courses,set_batch,get_captcha_inner};
-use funky_lesson_core::model::structs::{BatchInfo, CourseInfo, EnrollmentStatus};
-use funky_lesson_core::client::request::create_client;
-use funky_lesson_core::tokio;
 use funky_lesson_core::Client;
 use funky_lesson_core::TokioMutex;
+use funky_lesson_core::app::request::gui::{enroll_courses, login};
+use funky_lesson_core::app::request::{get_captcha_inner, get_courses, set_batch};
+use funky_lesson_core::client::request::create_client;
+use funky_lesson_core::model::structs::{BatchInfo, CourseInfo, EnrollmentStatus};
+use funky_lesson_core::tokio;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::State;

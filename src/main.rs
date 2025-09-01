@@ -1,10 +1,5 @@
 mod app;
-// use app::*;
-
-mod bpp;
-
-mod cpp;
-use cpp::*;
+use app::*;
 
 use leptos::mount::mount_to_body;
 use leptos::*;

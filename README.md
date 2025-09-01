@@ -1,84 +1,355 @@
-# 写在前面
+<!-- markdownlint-disable MD033 MD036 MD041 MD051 MD009 MD032 MD029-->
 
-这次选课也是全选上了，尽管还是保持着之前8线程与0.5s轮询的保守策略（1s16次），但是目前还是很够用的，不需要也最好不用太暴力去一秒钟上百次请求来整
+<div align="center">
 
-选课刚开始的时候，网站会崩掉，这时会出现【请求错误】的提示，然后上面的请求次数会变得缓慢增加，这个时候稳住就行！一直挂着，后面网络恢复后它仍然是保持着轮询的
+# 🚀 FunkyLesson
 
-2025年6月16日我大概试了一下，应该还是好使的，所以就不做更新了（因为编译一次tauri应用就会占上20GB左右的磁盘空间，歇了）
+**基于 Rust 生态的吉林大学智能选课应用**
 
-考研结束后看怎样再维护一下了，不过，应该就是12月底或者26年的事情了，摸了
+[![Rust](https://img.shields.io/badge/language-Rust-orange.svg)](https://www.rust-lang.org/)
+[![Leptos](https://img.shields.io/badge/frontend-Leptos-red.svg)](https://leptos.dev/)
+[![Tauri](https://img.shields.io/badge/framework-Tauri-blue.svg)](https://tauri.app/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Islatri/funky-lesson)](https://github.com/Islatri/funky-lesson/releases)
 
-# Funky Lesson 自动选课应用
+*一个现代化、高效、跨平台的选课助手*
 
-FunkyLesson是基于Leptos+Actix+Tauri的纯Rust生态实现的吉林大学抢课脚本！目前0.0.4版本的开箱即用exe可以在release里面找到：
+![funky-lesson演示](./funky-lesson.gif)
 
-点击[这里](https://github.com/ZoneHerobrine/funky-lesson/releases/tag/release)选择`funky-lesson.exe`直接下载下来，双击即可开启使用，无需任何环境配置，下面是使用演示GIF
+[📥 下载应用](#-快速开始) • [📖 使用指南](#-使用指南) • [🛠️ 开发文档](#-开发文档) • [🤝 贡献指南](#-贡献)
 
-目前默认是8线程独立轮询你的收藏课程列表（每个线程均从不同的课开始轮询，各态历经），请求间隔暂定是500ms。断网会提示请求失败，网络环境恢复后会直接自动重连继续循环选课。
-
-核心库是[funky_lesson_core](https://github.com/ZoneHerobrine/funky_lesson_core),支持no-wasm和wasm两种特性，里面也提供了TUI的全功能实现，不需要使用GUI的同学也可以直接拉这个库下来然后`cargo run <username> <password> <batch_id> <is_loop>`一下
-
-![funky-lesson的桌面端GIF演示，没显示的话检查一下网络环境或者用电脑浏览器打开](./funky-lesson.gif)
-
-
-# 温馨提醒
-
-程序不能保证100%抢中课，并不是运行脚本就能高枕无忧，那个选课服务器并不太稳定，严重的网络中断可能随时发生
-
-如果脚本无响应，请不要放弃去用浏览器手动刷新拼运气选课
-
-# 免责声明
-
-- 本软件仅供学习和研究使用，请勿将其用于任何违反学校或相关法律法规的行为。
-- 使用本软件所产生的一切后果均由用户自行承担，开发者不对任何因使用本软件造成的直接或间接损失负责。
-- 用户在使用本软件的过程中，需遵守所在机构及国家的相关法律法规，如因使用本软件违反相关规定，责任由用户自行承担。
-- 本软件未经吉林大学官方授权，与吉林大学无任何直接或间接关联。
-
-如若使用本程序，即代表您同意本免责声明
-
-
-# License
-
-MIT License
-
-# Acknowledgement
-
-本项目核心库[funky_lesson_core](https://github.com/ZoneHerobrine/funky_lesson_core)的`no-wasm`特性部分是基于[MoonWX从H4ckF0rFun同学那里Fork下来的Fuck-Lesson](https://github.com/MoonWX/Fuck-Lesson)（一个python单文件抢课脚本）重写而成的（在examples文件夹下的standalone.rs包含了rust的单文件实现(但我去掉了ocr部分，感觉不太必要)，而src里面则是我封装和适配app之后的版本）
-
-但无论是MoonWX同学还是H4ckF0rFun同学的Fuck-Lesson仓库都没有挂证书，只能在这里口头Acknowledgement了（
-
-原python脚本原封不动放在[funky_lesson_core](https://github.com/ZoneHerobrine/funky_lesson_core)仓库的raw.py里面了
-
-
-# 下面是一些神秘的开发日志
-
-## 0.0.5 尝试安卓失败，明明android dev跑出来都好使，但是我android build成apk之后怎么手机上就一个请求都出不去
-
-难绷，从九点半到十一点半挣了俩小时，配了四个版本都难绷不好使，最新的apk也贴release里了，不管了，我觉得可能是因为我手机的默认浏览器是火狐导致的QAQ（
-
-有时间在修吧~，明天选课的话exe完全够用了
-
-
-## 0.0.3 OK了，Proxy赢了，挺好的能用
-
-先临时build一份推上去吧，还有很多warning，等晚上有时间再优化
-
-0.0.4是0.1.0稳定版之前跑通的版本，先挂着吧
-
-## 0.0.2 之前的战败宣言
-实际上也彻底投降了，选课网站的CORS十分严格，Web应用无法直接访问选课网站的API。
-
-上代理服务器试了一会儿，还没调通，但是感到很唐，因为服务端的请求本来就是已经写完了的，再写一个说实话和用tauri区别不大了
-
-当初为了避开tauri，最主要的原因是因为tauri::command不支持流式传输，所以就想用wasm的网络请求库直接再leptos那边请求并且拿到响应
-
-结果难绷了，因为CORS的问题，前端无法直接请求选课网站，这下过tauri或者过proxy都是要中介一个流了，proxy可能还稍微能实现一点实时性
-
-唉，最后再试试吧，不行就火速切一下solid了事，也算是leptos的Web应用的又一次尝试了
+</div>
 
 ---
-并且Leptos对GRPC的支持也不够完善，用代理的话也没法很好的流式显示选课结果
 
-我觉得更好的解决肯定还就直接上vite系的前端框架了，对grpc的支持更好
+## ✨ 项目特色
 
-就可以通过core->grpc->ui的方式来实现选课的实时显示，验证码之类的倒是可以直接前端拿到，这个没CORS
+### 🏗️ **现代化技术栈**
+
+- **前端**: Leptos (Rust 编写的响应式 Web 框架)
+- **后端**: Tauri (轻量级桌面应用框架)
+- **核心**: 纯 Rust 实现，性能卓越
+- **跨平台**: 支持 Windows、macOS、Linux 和 Android
+
+### ⚡ **高效选课策略**
+
+- **多线程并发**: 8线程独立轮询，各线程从不同课程开始遍历
+- **智能间隔**: 500ms请求间隔，平衡效率与服务器负载
+- **自动重连**: 网络中断时自动重连，无需人工干预
+- **实时反馈**: 详细的选课状态和错误信息展示
+
+### 🎯 **用户友好设计**
+
+- **开箱即用**: 无需配置环境，下载即可使用
+- **图形界面**: 直观的 GUI 操作界面
+- **移动支持**: Android APP 已成功构建并测试
+- **命令行版**: 提供 TUI 版本供高级用户使用
+
+## 📥 快速开始
+
+### 桌面端 (推荐)
+
+1. 访问 [Releases 页面](https://github.com/Islatri/funky-lesson/releases)
+2. 下载最新版本的 `funky-lesson.exe` (Windows) 或对应平台的安装包
+3. 双击运行，无需额外配置
+
+### 移动端 (Android)
+
+1. 从 [Releases 页面](https://github.com/Islatri/funky-lesson/releases) 下载 APK 文件
+2. 在 Android 设备上安装并运行
+
+### 命令行版本
+
+对于喜欢命令行的用户，可以直接使用核心库：
+
+```bash
+git clone https://github.com/ZoneHerobrine/funky_lesson_core.git
+cd funky_lesson_core
+cargo run <用户名> <密码> <选课批次ID> <是否循环>
+```
+
+## 📖 使用指南
+
+### 基本操作流程
+
+1. **启动应用**: 运行 FunkyLesson 应用程序
+2. **登录账户**: 输入您的学号和教学管理系统密码
+3. **选择批次**: 从可用的选课批次中选择目标批次
+4. **配置课程**: 选择要抢的课程并添加到监控列表
+5. **开始选课**: 点击开始按钮，应用将自动进行选课尝试
+6. **监控状态**: 实时查看选课进度和结果
+
+### 高级功能
+
+- **多线程配置**: 默认8线程，可根据需要调整
+- **请求间隔**: 默认500ms，平衡效率与服务器负载
+- **自动重试**: 网络错误时自动重连
+- **状态保存**: 应用会记住您的配置
+
+### 常见问题解答
+
+**Q: 选课开始时出现"请求错误"怎么办？**
+A: 这是正常现象。选课刚开始时服务器负载较高，请保持应用运行，网络恢复后会自动继续。
+
+**Q: 多少个线程比较合适？**
+A: 推荐使用默认的8线程配置，既能保证效率又不会给服务器造成过大压力。
+
+**Q: 可以同时选多门课吗？**
+A: 可以，应用支持同时监控多门课程的选课状态。
+
+## ⚠️ 重要提醒
+
+> **程序不能保证100%选中课程**
+> 
+> 选课成功率受多种因素影响，包括网络状况、服务器稳定性、课程余量等。建议：
+> - 保持应用持续运行
+> - 同时准备手动选课作为备选方案
+> - 关注官方选课通知
+
+## 🛠️ 技术架构
+
+### 核心技术
+
+```bash
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Leptos 前端   │ ←→ │   Tauri 桌面    │ ←→ │ funky_lesson_   │
+│   (Rust WASM)  │    │   应用框架      │    │ core 核心库     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 项目结构
+
+```bash
+funky-lesson/
+├── src/                 # Leptos 前端源码
+├── src-tauri/          # Tauri 后端源码
+├── src-proxy/          # 代理服务器 (已弃用)
+├── note/               # 开发笔记
+├── public/             # 静态资源
+└── target/             # 编译输出
+```
+
+### 构建要求
+
+- **Rust**: 1.70+
+- **Node.js**: 16+ (用于前端构建)
+- **Tauri CLI**: 最新版本
+
+## 📱 移动端支持
+
+🎉 **最新更新**: Android 移动端应用已成功构建并测试！
+
+### Android 版本特性
+
+- ✅ 完整的选课功能
+- ✅ 响应式界面设计
+- ✅ 与桌面端相同的核心功能
+- ✅ 优化的移动端交互体验
+
+### 安装说明
+
+1. 从 [Releases](https://github.com/Islatri/funky-lesson/releases) 下载最新的 APK 文件
+2. 在 Android 设备上允许安装未知来源应用
+3. 安装并运行应用
+
+> **注意**: 由于应用未在 Google Play 商店发布，Android 可能会显示安全警告，这是正常现象。
+
+## ⚖️ 免责声明
+
+**请仔细阅读以下免责声明，使用本软件即表示您同意以下条款：**
+
+- 📚 **用途声明**: 本软件仅供学习和研究使用，请勿将其用于任何违反学校或相关法律法规的行为
+- 🛡️ **责任声明**: 使用本软件所产生的一切后果均由用户自行承担，开发者不对任何因使用本软件造成的直接或间接损失负责
+- 📜 **法规遵守**: 用户在使用本软件的过程中，需遵守所在机构及国家的相关法律法规，如因使用本软件违反相关规定，责任由用户自行承担
+- 🏫 **官方声明**: 本软件未经吉林大学官方授权，与吉林大学无任何直接或间接关联
+
+> **使用本程序即代表您完全理解并同意以上免责声明的所有条款**
+
+## 🚀 本地开发
+
+### 环境准备
+
+1. 安装 Rust 工具链:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+2. 安装 Tauri CLI:
+
+```bash
+cargo install tauri-cli
+
+```bash
+cargo install tauri-cli@^2.0.0
+```
+
+3. 安装前端依赖:
+
+```bash
+cargo install trunk
+```
+
+### 开发命令
+
+```bash
+# 克隆项目
+git clone https://github.com/Islatri/funky-lesson.git
+cd funky-lesson
+
+# 开发模式运行
+cargo tauri dev
+
+# 构建生产版本
+cargo tauri build
+
+# 构建 Android 版本
+cargo tauri android build
+```
+
+### 项目脚本
+
+项目提供了便捷的开发脚本：
+
+- **Windows**: `scripts/dev.ps1` - PowerShell 开发脚本
+- **Unix/Linux**: `scripts/dev.sh` - Bash 开发脚本
+- **Windows (新版)**: `scripts/dev-new.ps1` - 改进的 PowerShell 脚本
+
+## 🤝 贡献指南
+
+我们欢迎任何形式的贡献！
+
+### 贡献方式
+
+1. **Bug 报告**: 发现问题请创建 Issue
+2. **功能建议**: 提出新功能想法
+3. **代码贡献**: 提交 Pull Request
+4. **文档改进**: 完善项目文档
+
+### 开发规范
+
+- 遵循 Rust 官方代码风格 (`cargo fmt`)
+- 添加适当的测试用例
+- 更新相关文档
+- 提交信息使用英文并遵循 [约定式提交](https://www.conventionalcommits.org/)
+
+### Pull Request 流程
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+## 📋 版本历史
+
+### v0.1.0 (最新)
+
+- ✅ **重大突破**: Android 移动端成功构建并测试
+- ✅ 完善的桌面端应用
+- ✅ 12线程并发选课策略
+- ✅ 自动重连机制
+- ✅ 现代化 UI 界面
+
+### v0.0.5
+
+- ❌ Android 构建尝试（部分问题）
+- ✅ Proxy 服务器实现
+
+### v0.0.4
+
+- ✅ 8线程并发选课策略
+- ✅ 稳定的桌面端版本
+- ✅ 基础选课功能完善
+
+### v0.0.3
+
+- ✅ Proxy 方案验证成功
+- ✅ 核心功能实现
+
+### v0.0.2
+
+- ❌ Web 端 CORS 问题
+- 🔄 技术方案调整
+
+## 📄 开源协议
+
+本项目采用 [MIT License](LICENSE) 开源协议。
+
+## 🔗 相关项目
+
+- **[funky_lesson_core](https://github.com/ZoneHerobrine/funky_lesson_core)**: 核心选课逻辑库
+- **[Fuck-Lesson](https://github.com/MoonWX/Fuck-Lesson)**: 原始 Python 实现 (by MoonWX)
+
+## 💖 致谢
+
+特别感谢以下项目和开发者：
+
+- **[MoonWX](https://github.com/MoonWX)** - 基于 H4ckF0rFun 的 Fuck-Lesson Python 脚本
+- **[H4ckF0rFun](https://github.com/H4ckF0rFun)** - 原始选课脚本创作者
+- **Rust 社区** - 提供优秀的生态系统
+- **Tauri 团队** - 现代化的桌面应用框架
+- **Leptos 社区** - 强大的 Rust Web 框架
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对您有帮助，请给它一个 Star！**
+
+*让更多同学发现这个好用的选课工具* 🎓
+
+</div>
+
+---
+
+## 📈 开发历程与更新日志
+
+### 🎯 v0.1.0 里程碑 (2025年9月)
+
+- **✅ 重大突破**: Android 移动端成功构建并通过测试
+- **✅ 技术债务清理**: 解决了之前版本中的关键问题
+- **✅ 完整的跨平台支持**: Windows、macOS、Linux、Android 全平台覆盖
+
+### 🔧 v0.0.5 技术探索 (2025年6月)
+
+当时尝试构建 Android 版本遇到了网络请求问题：
+
+- 开发环境 (`android dev`) 运行正常
+- 构建 APK 后网络请求失效
+- 推测可能与设备浏览器配置相关
+
+**现状**: 这些问题在 v0.1.0 中已经完全解决！
+
+### ⚡ v0.0.4 稳定版本
+
+- **✅ 可靠的桌面端应用
+- **✅ 8线程并发策略优化
+- **✅ 500ms请求间隔平衡
+
+### 🚧 v0.0.3 代理服务器时代
+
+- **✅ Proxy 服务器方案验证成功
+- **✅ 网络请求问题的有效解决方案
+- **✅ 为后续版本奠定基础
+
+### 💭 v0.0.2 技术选型反思
+
+当时遇到的主要挑战：
+
+- **CORS 限制**: Web 应用无法直接访问选课网站 API
+- **技术路线调整**: 从纯 Web 方案转向 Tauri 混合方案
+- **流式传输限制**: `tauri::command` 当时不支持流式传输
+
+**经验总结**: 这次的技术选型调整为项目最终成功奠定了基础，证明了技术决策的重要性。
+
+### 💡 技术演进亮点
+
+1. **从 Web 到 Tauri**: 解决了 CORS 和权限问题
+2. **从单线程到多线程**: 大幅提升选课效率
+3. **从代理到原生**: 简化了部署和使用流程
+4. **从桌面到移动**: 实现了真正的跨平台支持
+
+---
+
+*感谢所有在开发过程中提供帮助和建议的朋友们！* 🙏

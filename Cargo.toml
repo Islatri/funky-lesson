@@ -16,7 +16,7 @@ log = "0.4.27"
 js-sys = "0.3.77"
 console_error_panic_hook = "0.1.7"
 gloo-timers = {version="0.3.0",features=["futures"]}
-funky_lesson_core = { path = "../funky_lesson_core", default-features = false, features = ["wasm", "gui"]}
+funky_lesson_core = { git = "https://github.com/Islatri/funky_lesson_core.git", default-features = false, features = ["wasm", "gui"]}
 
 [workspace]
 members = ["src-tauri"]
