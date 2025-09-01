@@ -1,0 +1,223 @@
+/* 全局滚动条样式优化 - 适配各个浏览器 */
+/* 现代化、隐蔽、简约、纤细、灰色调 */
+
+/* ==========================================================================
+   Webkit浏览器 (Chrome, Safari, Edge) 滚动条样式
+   ========================================================================== */
+
+/* 整体滚动条 */
+::-webkit-scrollbar {
+  width: 6px;  /* 垂直滚动条宽度 - 纤细设计 */
+  height: 6px; /* 水平滚动条高度 */
+}
+
+/* 滚动条轨道 */
+::-webkit-scrollbar-track {
+  background: transparent; /* 隐蔽设计 - 透明背景 */
+  border-radius: 3px;
+}
+
+/* 滚动条滑块 */
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3); /* 浅灰色，低透明度 */
+  border-radius: 3px;
+  transition: all 0.2s ease-in-out; /* 平滑过渡动画 */
+}
+
+/* 滚动条滑块悬停状态 */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.5); /* 悬停时稍微深一点的灰色 */
+}
+
+/* 滚动条滑块激活状态 */
+::-webkit-scrollbar-thumb:active {
+  background: rgba(75, 85, 99, 0.7); /* 点击时更深的灰色 */
+}
+
+/* 滚动条角落 */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ==========================================================================
+   Firefox 滚动条样式
+   ========================================================================== */
+
+/* Firefox 滚动条样式 */
+* {
+  scrollbar-width: thin; /* 纤细滚动条 */
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent; /* 滑块颜色 轨道颜色 */
+}
+
+/* ==========================================================================
+   现代浏览器通用样式 (支持 scrollbar-* 属性的浏览器)
+   ========================================================================== */
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+/* ==========================================================================
+   增强的滚动体验
+   ========================================================================== */
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 优化滚动性能 */
+* {
+  -webkit-overflow-scrolling: touch; /* iOS 平滑滚动 */
+}
+
+/* ==========================================================================
+   特定容器的滚动条样式
+   ========================================================================== */
+
+/* 代码块滚动条 */
+pre::-webkit-scrollbar,
+code::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+pre::-webkit-scrollbar-thumb,
+code::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 2px;
+}
+
+/* 表格滚动条 */
+.table-container::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.4);
+  border-radius: 2.5px;
+}
+
+/* ==========================================================================
+   悬停时显示滚动条 (更加隐蔽的设计)
+   ========================================================================== */
+
+/* 默认状态下滚动条几乎不可见 */
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.1);
+}
+
+/* 容器悬停时显示滚动条 */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.5);
+}
+
+/* ==========================================================================
+   深色主题适配
+   ========================================================================== */
+
+/* 深色主题滚动条 */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(75, 85, 99, 0.3);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(107, 114, 128, 0.5);
+  }
+  
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(156, 163, 175, 0.7);
+  }
+  
+  * {
+    scrollbar-color: rgba(75, 85, 99, 0.3) transparent;
+  }
+}
+
+/* ==========================================================================
+   移动设备优化
+   ========================================================================== */
+
+/* 移动设备上隐藏滚动条 */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  
+  /* 仅在滚动时显示 */
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.4);
+  }
+}
+
+/* ==========================================================================
+   无障碍支持
+   ========================================================================== */
+
+/* 减少动画的用户偏好 */
+@media (prefers-reduced-motion: reduce) {
+  ::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.8);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 85, 99, 1);
+  }
+}
+
+/* ==========================================================================
+   特殊用途类
+   ========================================================================== */
+
+/* 完全隐藏滚动条的类 */
+.scrollbar-hidden {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* 强制显示滚动条的类 */
+.scrollbar-visible::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.6);
+  border-radius: 4px;
+}
+
+/* 自定义颜色滚动条 */
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}

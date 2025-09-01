@@ -2,7 +2,9 @@ mod app;
 // use app::*;
 
 mod bpp;
-use bpp::*;
+
+mod cpp;
+use cpp::*;
 
 use leptos::mount::mount_to_body;
 use leptos::*;

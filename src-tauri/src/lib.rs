@@ -2,6 +2,8 @@
 mod commands;
 use commands::*;
 use funky_lesson_core::tokio;
+use funky_lesson_core::TokioMutex;
+use funky_lesson_core::model::structs::EnrollmentStatus;
 
 // #[cfg_attr(mobile, tauri::mobile_entry_point)]
 // #[tokio::main]
