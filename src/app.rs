@@ -280,6 +280,11 @@ pub async fn get_courses(app_state: &AppState) -> Result<()> {
 
     let selected = gloo::get_selected_courses_proxy(&token, &batch_id).await?;
 
+    // let selected = serde_json::json!({
+    //     "code": 200,
+    //     "msg": "成功",
+    //     "data": []
+    // });
     let selected_courses: Vec<CourseInfo> = if selected["code"] == 200 {
         serde_json::from_value(selected["data"].clone())?
     } else {
