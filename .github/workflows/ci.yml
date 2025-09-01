@@ -63,17 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ❌ 移除 Node.js 设置 - Trunk 不需要
-      # - name: Setup node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
-      #     cache: 'npm'
-
+      # 🎯 安装 Rust 并添加 WASM target（关键修复）
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          components: rustfmt, clippy
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin,wasm32-unknown-unknown' || 'wasm32-unknown-unknown' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -86,15 +81,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      # 🚀 Windows 使用预编译，其他平台正常安装
       - name: Cache trunk binary
         id: cache-trunk
         uses: actions/cache@v4
         with:
-          path: ${{ runner.os == 'Windows' && '~/.cargo/bin/trunk.exe' || '~/.cargo/bin/trunk' }}
-          key: trunk-${{ runner.os }}-${{ env.TRUNK_VERSION }}
+          path: |
+            ~/.cargo/bin/trunk${{ runner.os == 'Windows' && '.exe' || '' }}
+          key: trunk-binary-${{ runner.os }}-${{ env.TRUNK_VERSION }}
 
-      - name: Install trunk
-        if: steps.cache-trunk.outputs.cache-hit != 'true'
+      - name: Install trunk (Windows - precompiled)
+        if: runner.os == 'Windows' && steps.cache-trunk.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-pc-windows-msvc.zip" -o trunk.zip
+          unzip trunk.zip
+          mkdir -p ~/.cargo/bin
+          mv trunk.exe ~/.cargo/bin/
+
+      - name: Install trunk (Unix - compile from source)
+        if: runner.os != 'Windows' && steps.cache-trunk.outputs.cache-hit != 'true'
         run: |
           cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
 
@@ -126,20 +132,14 @@ jobs:
         with:
           cache-disabled: false
 
+      # 🎯 Android 构建也需要 WASM target（关键修复）
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android,wasm32-unknown-unknown
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
-
-      # ❌ 移除 Node.js 设置 - Android 构建也不需要
-      # - name: Setup Node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
-      #     cache: 'npm'
 
       - name: Cache Android NDK
         uses: actions/cache@v4
@@ -161,6 +161,7 @@ jobs:
       - name: Install tools
         run: |
           if [ ! -f ~/.cargo/bin/trunk ]; then
+            # Linux 上编译安装
             cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
           fi
           if [ ! -f ~/.cargo/bin/cargo-tauri ]; then
@@ -170,16 +171,10 @@ jobs:
       - name: Build frontend
         run: trunk build --release
 
-      # 🔐 配置 Android 签名
       - name: Setup Android signing
         run: |
-          # 创建 keystore 目录
           mkdir -p ${{ github.workspace }}/android-signing
-          
-          # 从 Secrets 中解码并保存 keystore 文件
           echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/android-signing/app-release.jks
-          
-          # 创建 key.properties 文件
           cat << EOF > ${{ github.workspace }}/src-tauri/gen/android/key.properties
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -188,14 +183,12 @@ jobs:
           EOF
 
       - name: Build Android APK (Release & Signed)
-        run: |
-          cargo tauri android build --apk --release
+        run: cargo tauri android build --apk --release
         env:
           CARGO_INCREMENTAL: 1
 
       - name: Build Android AAB (Release & Signed)
-        run: |
-          cargo tauri android build --aab --release
+        run: cargo tauri android build --aab --release
         env:
           CARGO_INCREMENTAL: 1
 
