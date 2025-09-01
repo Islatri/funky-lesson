@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     tags:
-      - 'v*'  # 添加标签触发条件
+      - 'v*'
   pull_request:
     branches: [ main ]
   release:
@@ -12,9 +12,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  TRUNK_VERSION: 0.21.4
+  TAURI_CLI_VERSION: 2.8.4
 
 jobs:
-  # 单一任务：质量检查 + 测试
   quality:
     name: Quality & Test
     runs-on: ubuntu-latest
@@ -29,129 +30,211 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # 安装 Linux 系统依赖
       - name: Install Linux deps
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
 
-      # 快速检查格式和基本编译
       - name: Format & Check
         run: |
           cargo fmt --all -- --check
           cargo clippy --workspace --all-targets -- -D clippy::correctness -D clippy::suspicious -W clippy::complexity
           cargo check --workspace
 
-      # 只运行必要的测试
       - name: Test
         run: cargo test --workspace
 
-  # 在发布或标签推送时构建桌面版
-  build-release:
-    name: Release Build
+  build-desktop:
+    name: Desktop Build
     if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
     needs: quality
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            name: linux
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            name: windows
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            name: macos
-    runs-on: ${{ matrix.os }}
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest' 
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install Linux deps
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
-
-      - uses: actions/setup-node@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Install tools
-        run: |
-          cargo install trunk tauri-cli --locked
-
-      - name: Build
-        run: |
-          trunk build --release
-          cargo tauri build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          name: ${{ matrix.name }}-app
-          path: |
-            src-tauri/target/release/bundle/**/*
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-  # 在发布或标签推送时构建Android版
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Cache trunk binary
+        id: cache-trunk
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/trunk
+          key: trunk-${{ runner.os }}-${{ env.TRUNK_VERSION }}
+
+      - name: Install trunk
+        if: steps.cache-trunk.outputs.cache-hit != 'true'
+        run: |
+          cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
+
+      - name: Build frontend
+        run: trunk build --release
+
+      - uses: tauri-apps/tauri-action@v0.5.23
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+
+  # 🔐 Android 构建 - 包含签名配置
   build-android:
-    name: Android Build
+    name: Android Build  
     if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
     needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          submodules: recursive
+          distribution: 'temurin'
+          java-version: '17'
 
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: actions/setup-java@v4
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
         with:
-          java-version: 17
-          distribution: temurin
+          cache-disabled: false
 
-      - uses: android-actions/setup-android@v3
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
-      - name: Setup Android
-        run: |
-          sdkmanager "ndk;25.2.9519653"
-          rustup target add aarch64-linux-android armv7-linux-androideabi
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Build Android
+      - name: Cache Android NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk
+          key: android-ndk-26.3.11579264
+
+      - name: Cache build tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/trunk
+            ~/.cargo/bin/cargo-tauri
+          key: build-tools-${{ runner.os }}-trunk-${{ env.TRUNK_VERSION }}-tauri-${{ env.TAURI_CLI_VERSION }}
+
+      - name: Install NDK
+        run: sdkmanager "ndk;26.3.11579264"
+
+      - name: Install tools
         run: |
-          cargo install trunk tauri-cli --locked
-          trunk build --release
-          cargo tauri android build --apk
+          if [ ! -f ~/.cargo/bin/trunk ]; then
+            cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
+          fi
+          if [ ! -f ~/.cargo/bin/cargo-tauri ]; then
+            cargo install --version ${{ env.TAURI_CLI_VERSION }} tauri-cli --locked
+          fi
 
+      - name: Build frontend
+        run: trunk build --release
+
+      # 🔐 配置 Android 签名
+      - name: Setup Android signing
+        run: |
+          # 创建 keystore 目录
+          mkdir -p ${{ github.workspace }}/android-signing
+          
+          # 从 Secrets 中解码并保存 keystore 文件
+          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/android-signing/app-release.jks
+          
+          # 创建 key.properties 文件
+          cat << EOF > ${{ github.workspace }}/src-tauri/gen/android/key.properties
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=${{ github.workspace }}/android-signing/app-release.jks
+          EOF
+
+      # 🏗️ 构建签名的 APK
+      - name: Build Android APK (Release & Signed)
+        run: |
+          # 构建 release APK (会自动使用 key.properties 进行签名)
+          cargo tauri android build --apk --release
+        env:
+          CARGO_INCREMENTAL: 1
+
+      # 🏗️ 构建 AAB (Google Play 发布格式)
+      - name: Build Android AAB (Release & Signed)
+        run: |
+          # 构建 AAB 格式 (Google Play 推荐)
+          cargo tauri android build --aab --release
+        env:
+          CARGO_INCREMENTAL: 1
+
+      # 📤 上传构建产物
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: android-apk-signed
+          path: src-tauri/gen/android/app/build/outputs/apk/release/*.apk
 
-  # 发布 - 只在标签推送时运行，不在 release 事件时运行
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-signed
+          path: src-tauri/gen/android/app/build/outputs/bundle/release/*.aab
+
+      # 🧹 清理敏感文件
+      - name: Cleanup signing files
+        if: always()
+        run: |
+          rm -rf ${{ github.workspace }}/android-signing
+          rm -f ${{ github.workspace }}/src-tauri/gen/android/key.properties
+
   release:
     name: Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build-release, build-android]
+    if: startsWith(github.ref, 'refs/tags/v') 
+    needs: [build-desktop, build-android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            */**/*
+            **/*
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
