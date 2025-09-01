@@ -67,7 +67,9 @@ struct ProxyRequest {
 
 async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpResponse {
     let endpoint = path.into_inner();
+    let params = req.query_string();
     debug!("Handling GET proxy request for endpoint: {}", endpoint);
+    debug!("Query params: {}", params);
 
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
@@ -77,6 +79,10 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
     // 获取原始URL
     let original_url = match endpoint.as_str() {
         "profile/index.html" => "https://icourses.jlu.edu.cn/xsxk/profile/index.html",
+        "elective/grablessons" => &format!(
+            "https://icourses.jlu.edu.cn/xsxk/elective/grablessons?{}",
+            params
+        ),
         _ => {
             return HttpResponse::BadRequest().json(json!({
                 "error": "Invalid endpoint for GET request"
@@ -155,18 +161,29 @@ async fn proxy_handler(
         None => None,
     };
 
-    // let batch_id = match req.headers().get("BatchId") {
-    //     Some(token) => match token.to_str() {
-    //         Ok(t) => Some(t.to_string()),
-    //         Err(e) => {
-    //             error!("Invalid BatchId token: {}", e);
-    //             return HttpResponse::BadRequest().json(json!({
-    //                 "error": "Invalid BatchId token"
-    //             }));
-    //         }
-    //     },
-    //     None => None,
-    // };
+    let keep_alive = match req.headers().get("Connection") {
+        Some(token) => match token.to_str() {
+            Ok(t) => t.eq_ignore_ascii_case("keep-alive"),
+            Err(e) => {
+                error!("Invalid Connection token: {}", e);
+                false
+            }
+        },
+        None => false,
+    };
+
+    let batch_id = match req.headers().get("BatchId") {
+        Some(token) => match token.to_str() {
+            Ok(t) => Some(t.to_string()),
+            Err(e) => {
+                error!("Invalid BatchId token: {}", e);
+                return HttpResponse::BadRequest().json(json!({
+                    "error": "Invalid BatchId token"
+                }));
+            }
+        },
+        None => None,
+    };
 
     let mut headers = HeaderMap::new();
     // 配置常用headers
@@ -182,12 +199,35 @@ async fn proxy_handler(
     if let Some(token) = auth_token {
         headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
     }
-    // if let Some(batch_id) = batch_id {
-    //     headers.insert("BatchId", HeaderValue::from_str(&batch_id).unwrap());
-    // }
+    if let true = keep_alive {
+        headers.insert("Connection", HeaderValue::from_str("keep-alive").unwrap());
+    }
+    if body.original_url.contains("icourses.jlu.edu.cn") {
+        headers.insert(
+            "Origin",
+            HeaderValue::from_str("https://icourses.jlu.edu.cn").unwrap(),
+        );
+    }
+    if body.original_url.contains("xsxk/sc/clazz/list") {
+        if let Some(batch_id) = batch_id {
+            headers.insert(
+                "Referer",
+                HeaderValue::from_str(&format!(
+                    "https://icourses.jlu.edu.cn/xsxk/profile/index.html?batchId={}",
+                    batch_id
+                ))
+                .unwrap(),
+            );
+        }
+    }
 
     // 构建请求体
     let mut request_body = HashMap::new();
+    if body.original_url.contains("xsxk/elective/user") {
+        if let Some(batch_id) = &body.batch_id {
+            request_body.insert("batchId", batch_id);
+        }
+    }
     if let Some(loginname) = &body.loginname {
         request_body.insert("loginname", loginname);
     }
@@ -203,9 +243,9 @@ async fn proxy_handler(
 
     // 构建查询参数
     let mut query_params = HashMap::new();
-    if let Some(batch_id) = &body.batch_id {
-        query_params.insert("batchId", batch_id);
-    }
+    // if let Some(batch_id) = &body.batch_id {
+    //     query_params.insert("batchId", batch_id);
+    // }
     if let Some(class_type) = &body.class_type {
         query_params.insert("clazzType", class_type);
     }
@@ -228,7 +268,11 @@ async fn proxy_handler(
 
     // 添加请求体或查询参数
     if !request_body.is_empty() {
-        request = request.query(&request_body);
+        // 应当以urlencoded形式发送
+        let request_body = serde_urlencoded::to_string(&request_body).unwrap_or_default();
+        request = request
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(request_body);
     }
     if !query_params.is_empty() {
         request = request.query(&query_params);

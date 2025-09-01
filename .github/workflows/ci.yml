@@ -192,7 +192,7 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/android-signing
           echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/android-signing/app-release.jks
-          cat << EOF > ${{ github.workspace }}/src-tauri/gen/android/key.properties
+          cat << EOF > ${{ github.workspace }}/src-tauri/gen/android/local.properties
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
@@ -238,7 +238,7 @@ jobs:
         if: always()
         run: |
           rm -rf ${{ github.workspace }}/android-signing
-          rm -f ${{ github.workspace }}/src-tauri/gen/android/key.properties
+          rm -f ${{ github.workspace }}/src-tauri/gen/android/local.properties
 
   release:
     name: Release

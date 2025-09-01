@@ -173,8 +173,7 @@ pub fn ToastContainer() -> impl IntoView {
 
                     view! {
                         <div class={format!(
-                            "flex items-start justify-between gap-3 p-2 rounded-xl backdrop-blur-sm border shadow-lg max-w-sm transform transition-all duration-500 ease-out pointer-events-auto {} {} {} animate-in slide-in-from-top-2 fade-in zoom-in-95",
-                            bg_color, border_color, base_color
+                            "flex items-start justify-between gap-3 p-2 rounded-xl backdrop-blur-sm border shadow-lg max-w-sm transform transition-all duration-500 ease-out pointer-events-auto {bg_color} {border_color} {base_color} animate-in slide-in-from-top-2 fade-in zoom-in-95"
                         )}
                         style="animation-duration: 0.4s;">
                             <div>
@@ -279,12 +278,6 @@ pub async fn get_courses(app_state: &AppState) -> Result<()> {
         .ok_or_else(|| ErrorKind::ParseError("No batch id selected".to_string()))?;
 
     let selected = gloo::get_selected_courses_proxy(&token, &batch_id).await?;
-
-    // let selected = serde_json::json!({
-    //     "code": 200,
-    //     "msg": "成功",
-    //     "data": []
-    // });
     let selected_courses: Vec<CourseInfo> = if selected["code"] == 200 {
         serde_json::from_value(selected["data"].clone())?
     } else {
@@ -292,7 +285,6 @@ pub async fn get_courses(app_state: &AppState) -> Result<()> {
     };
 
     let favorite = gloo::get_favorite_courses_proxy(&token, &batch_id).await?;
-
     let favorite_courses: Vec<CourseInfo> = if favorite["code"] == 200 {
         serde_json::from_value(favorite["data"].clone())?
     } else {
@@ -398,7 +390,7 @@ pub async fn enroll_courses(
                         app_state.enrollment_status.update(|s| {
                             s.course_statuses[course_idx] = format!("[{}]请求错误", course.KCM);
                         });
-                        log::error!("请求错误: {:?}", e);
+                        log::error!("请求错误: {e:?}");
                     }
                 }
 
@@ -480,12 +472,12 @@ pub fn App() -> impl IntoView {
             match get_captcha().await {
                 Ok((uuid, captcha_b64)) => {
                     set_captcha_uuid.set(uuid);
-                    let image_src = format!("{}", captcha_b64);
+                    let image_src = captcha_b64.to_string();
                     set_captcha_image_src.set(image_src);
                     toast_success("验证码已刷新");
                 }
                 Err(e) => {
-                    let error_msg = format!("获取验证码失败：{:?}", e);
+                    let error_msg = format!("获取验证码失败：{e:?}");
                     set_status_message.set(error_msg.clone());
                     toast_error(error_msg);
                 }
@@ -495,14 +487,14 @@ pub fn App() -> impl IntoView {
 
     // 登录处理
     let handle_login = {
-        let username = username.clone();
-        let password = password.clone();
-        let captcha = captcha.clone();
-        let captcha_uuid = captcha_uuid.clone();
-        let set_status_message = set_status_message.clone();
-        let set_step = set_step.clone();
-        let app_state = app_state.clone();
-        let handle_get_captcha = handle_get_captcha.clone();
+        let username = username;
+        let password = password;
+        let captcha = captcha;
+        let captcha_uuid = captcha_uuid;
+        let set_status_message = set_status_message;
+        let set_step = set_step;
+        let app_state = app_state;
+        let handle_get_captcha = handle_get_captcha;
 
         move |ev: web_sys::SubmitEvent| {
             ev.prevent_default();
@@ -527,13 +519,13 @@ pub fn App() -> impl IntoView {
             }
 
             let current_state = app_state.get();
-            let set_status_message = set_status_message.clone();
-            let set_step = set_step.clone();
-            let captcha_uuid = captcha_uuid.clone();
-            let username = username.clone();
-            let password = password.clone();
-            let captcha = captcha.clone();
-            let handle_get_captcha = handle_get_captcha.clone();
+            let set_status_message = set_status_message;
+            let set_step = set_step;
+            let captcha_uuid = captcha_uuid;
+            let username = username;
+            let password = password;
+            let captcha = captcha;
+            let handle_get_captcha = handle_get_captcha;
 
             spawn_local(async move {
                 match login(
@@ -551,7 +543,7 @@ pub fn App() -> impl IntoView {
                         toast_success("登录成功！");
                     }
                     Err(e) => {
-                        let error_msg = format!("登录失败：{:?}", e);
+                        let error_msg = format!("登录失败：{e:?}");
                         set_status_message.set(error_msg.clone());
                         toast_error(error_msg);
                         handle_get_captcha(());
@@ -576,14 +568,14 @@ pub fn App() -> impl IntoView {
                             toast_success("批次设置成功，已获取课程列表");
                         }
                         Err(e) => {
-                            let error_msg = format!("获取课程失败：{:?}", e);
+                            let error_msg = format!("获取课程失败：{e:?}");
                             set_status_message.set(error_msg.clone());
                             toast_error(error_msg);
                         }
                     }
                 }
                 Err(e) => {
-                    let error_msg = format!("选择批次失败：{:?}", e);
+                    let error_msg = format!("选择批次失败：{e:?}");
                     set_status_message.set(error_msg.clone());
                     toast_error(error_msg);
                 }
@@ -600,7 +592,7 @@ pub fn App() -> impl IntoView {
         spawn_local(async move {
             let courses = current_state.favorite_courses.get();
             if let Err(e) = enroll_courses(courses, true, &current_state).await {
-                let error_msg = format!("抢课出错：{:?}", e);
+                let error_msg = format!("抢课出错：{e:?}");
                 set_status_message.set(error_msg.clone());
                 toast_error(error_msg);
                 set_is_enrolling.set(false);
@@ -699,13 +691,13 @@ pub fn App() -> impl IntoView {
                             <p class={move || {
                                 let base = "text-xs sm:text-sm font-mono break-words leading-relaxed flex-1";
                                 if status_message.get().contains("成功") {
-                                    format!("{} text-green-300", base)
+                                    format!("{base} text-green-300")
                                 } else if status_message.get().contains("失败") {
-                                    format!("{} text-red-300", base)
+                                    format!("{base} text-red-300")
                                 } else if status_message.get().contains("请输入") {
-                                    format!("{} text-orange-300", base)
+                                    format!("{base} text-orange-300")
                                 } else {
-                                    format!("{} text-white/70", base)
+                                    format!("{base} text-white/70")
                                 }
                             }}>
                                 {move || status_message.get()}
@@ -746,7 +738,7 @@ pub fn App() -> impl IntoView {
                             each=move || batch_list().into_iter().enumerate()
                             key=|(_idx, batch)| batch.code.clone()
                             children=move |(idx, batch)| {
-                                let handle_select = handle_batch_select.clone();
+                                let handle_select = handle_batch_select;
                                 view! {
                                     <button
                                         class="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -754,7 +746,7 @@ pub fn App() -> impl IntoView {
                                         disabled=move || is_enrolling.get()
                                     >
                                         <div class="font-medium">{batch.name}</div>
-                                        <div class="text-xs text-white/70 mt-1">{format!("批次代码: {} | 批次 {}", batch.code, idx + 1)}</div>
+                                        <div class="text-xs text-white/70 mt-1">{format!("批次代码: {} | 批次 {}", batch.code, idx)}</div>
                                     </button>
                                 }
                             }
@@ -852,20 +844,11 @@ pub fn App() -> impl IntoView {
 
                         <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                             <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-orange-400 rounded-full"></div>
-                                <h3 class="text-lg font-bold text-white">"待选课程(即收藏课程)"</h3>
+                                <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                                <h3 class="text-lg font-bold text-white">"待选课程（即收藏课程）"</h3>
                                 <span class="text-white/70 text-sm">
                                     {move || format!("共 {} 门", app_state.get().favorite_courses.get().len())}
                                 </span>
-                            </div>
-                            <div class="text-white/70 text-sm">
-                                {move || {
-                                    if app_state.get().favorite_courses.get().is_empty() {
-                                        "若为空，则可以点左上角返回，然后再重进批次"
-                                    } else {
-                                        ""
-                                    }
-                                }}
                             </div>
                             <div class="space-y-2 max-h-40 overflow-y-auto">
                                 <For
@@ -873,10 +856,14 @@ pub fn App() -> impl IntoView {
                                     key=|course| course.JXBID.clone()
                                     children=move |course| {
                                         view! {
-                                            <div class="p-3 bg-orange-500/20 border border-orange-400/30 rounded-lg">
-                                                <div class="font-medium text-white text-sm">{course.KCM}</div>
-                                                <div class="text-xs text-white/70 mt-1">
-                                                    {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
+                                            <div class="p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="font-medium text-white text-sm">{course.KCM}</div>
+                                                        <div class="text-xs text-white/70 mt-1">
+                                                            {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         }
