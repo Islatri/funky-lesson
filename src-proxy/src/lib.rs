@@ -68,8 +68,8 @@ struct ProxyRequest {
 async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpResponse {
     let endpoint = path.into_inner();
     let params = req.query_string();
-    debug!("Handling GET proxy request for endpoint: {}", endpoint);
-    debug!("Query params: {}", params);
+    debug!("Handling GET proxy request for endpoint: {endpoint}");
+    debug!("Query params: {params}");
 
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
@@ -79,10 +79,9 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
     // 获取原始URL
     let original_url = match endpoint.as_str() {
         "profile/index.html" => "https://icourses.jlu.edu.cn/xsxk/profile/index.html",
-        "elective/grablessons" => &format!(
-            "https://icourses.jlu.edu.cn/xsxk/elective/grablessons?{}",
-            params
-        ),
+        "elective/grablessons" => {
+            &format!("https://icourses.jlu.edu.cn/xsxk/elective/grablessons?{params}")
+        }
         _ => {
             return HttpResponse::BadRequest().json(json!({
                 "error": "Invalid endpoint for GET request"
@@ -94,7 +93,7 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
         Some(token) => match token.to_str() {
             Ok(t) => Some(t.to_string()),
             Err(e) => {
-                error!("Invalid authorization token: {}", e);
+                error!("Invalid authorization token: {e}");
                 return HttpResponse::BadRequest().json(json!({
                     "error": "Invalid authorization token"
                 }));
@@ -108,17 +107,17 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
         headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
     }
 
-    debug!("Sending GET request to: {}", original_url);
+    debug!("Sending GET request to: {original_url}");
 
     match client.get(original_url).headers(headers).send().await {
         Ok(response) => {
             let status = response.status();
-            debug!("Received response with status: {}", status);
+            debug!("Received response with status: {status}");
 
             match response.text().await {
                 Ok(text) => HttpResponse::Ok().content_type("text/html").body(text),
                 Err(e) => {
-                    error!("Failed to get response text: {}", e);
+                    error!("Failed to get response text: {e}");
                     HttpResponse::InternalServerError().json(json!({
                         "error": format!("Failed to read response: {}", e)
                     }))
@@ -126,7 +125,7 @@ async fn proxy_handler_get(req: HttpRequest, path: web::Path<String>) -> HttpRes
             }
         }
         Err(e) => {
-            error!("Request failed: {}", e);
+            error!("Request failed: {e}");
             HttpResponse::InternalServerError().json(json!({
                 "error": format!("Request failed: {}", e)
             }))
@@ -140,8 +139,8 @@ async fn proxy_handler(
     path: web::Path<String>,
 ) -> HttpResponse {
     let endpoint = path.into_inner();
-    debug!("Handling proxy request for endpoint: {}", endpoint);
-    debug!("Request body: {:?}", body);
+    debug!("Handling proxy request for endpoint: {endpoint}");
+    debug!("Request body: {body:?}");
 
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
@@ -152,7 +151,7 @@ async fn proxy_handler(
         Some(token) => match token.to_str() {
             Ok(t) => Some(t.to_string()),
             Err(e) => {
-                error!("Invalid authorization token: {}", e);
+                error!("Invalid authorization token: {e}");
                 return HttpResponse::BadRequest().json(json!({
                     "error": "Invalid authorization token"
                 }));
@@ -165,7 +164,7 @@ async fn proxy_handler(
         Some(token) => match token.to_str() {
             Ok(t) => t.eq_ignore_ascii_case("keep-alive"),
             Err(e) => {
-                error!("Invalid Connection token: {}", e);
+                error!("Invalid Connection token: {e}");
                 false
             }
         },
@@ -176,7 +175,7 @@ async fn proxy_handler(
         Some(token) => match token.to_str() {
             Ok(t) => Some(t.to_string()),
             Err(e) => {
-                error!("Invalid BatchId token: {}", e);
+                error!("Invalid BatchId token: {e}");
                 return HttpResponse::BadRequest().json(json!({
                     "error": "Invalid BatchId token"
                 }));
@@ -199,7 +198,7 @@ async fn proxy_handler(
     if let Some(token) = auth_token {
         headers.insert(AUTHORIZATION, HeaderValue::from_str(&token).unwrap());
     }
-    if let true = keep_alive {
+    if keep_alive {
         headers.insert("Connection", HeaderValue::from_str("keep-alive").unwrap());
     }
     if body.original_url.contains("icourses.jlu.edu.cn") {
@@ -208,25 +207,24 @@ async fn proxy_handler(
             HeaderValue::from_str("https://icourses.jlu.edu.cn").unwrap(),
         );
     }
-    if body.original_url.contains("xsxk/sc/clazz/list") {
-        if let Some(batch_id) = batch_id {
-            headers.insert(
-                "Referer",
-                HeaderValue::from_str(&format!(
-                    "https://icourses.jlu.edu.cn/xsxk/profile/index.html?batchId={}",
-                    batch_id
-                ))
-                .unwrap(),
-            );
-        }
+    if body.original_url.contains("xsxk/sc/clazz/list")
+        && let Some(batch_id) = batch_id
+    {
+        headers.insert(
+            "Referer",
+            HeaderValue::from_str(&format!(
+                "https://icourses.jlu.edu.cn/xsxk/profile/index.html?batchId={batch_id}"
+            ))
+            .unwrap(),
+        );
     }
 
     // 构建请求体
     let mut request_body = HashMap::new();
-    if body.original_url.contains("xsxk/elective/user") {
-        if let Some(batch_id) = &body.batch_id {
-            request_body.insert("batchId", batch_id);
-        }
+    if body.original_url.contains("xsxk/elective/user")
+        && let Some(batch_id) = &body.batch_id
+    {
+        request_body.insert("batchId", batch_id);
     }
     if let Some(loginname) = &body.loginname {
         request_body.insert("loginname", loginname);
@@ -260,9 +258,9 @@ async fn proxy_handler(
     }
 
     debug!("Sending request to: {}", body.original_url);
-    debug!("Headers: {:?}", headers);
-    debug!("Query params: {:?}", query_params);
-    debug!("Request body: {:?}", request_body);
+    debug!("Headers: {headers:?}");
+    debug!("Query params: {query_params:?}");
+    debug!("Request body: {request_body:?}");
 
     let mut request = client.post(&body.original_url).headers(headers);
 
@@ -281,26 +279,23 @@ async fn proxy_handler(
     match request.send().await {
         Ok(response) => {
             let status = response.status();
-            debug!("Received response with status: {}", status);
+            debug!("Received response with status: {status}");
 
             match response.text().await {
                 Ok(text) => {
-                    debug!("Response text: {}", text);
+                    debug!("Response text: {text}");
                     match serde_json::from_str::<serde_json::Value>(&text) {
                         Ok(json_value) => HttpResponse::Ok()
                             .content_type("application/json")
                             .json(json_value),
                         Err(e) => {
-                            warn!(
-                                "Failed to parse response as JSON: {}, returning raw text",
-                                e
-                            );
+                            warn!("Failed to parse response as JSON: {e}, returning raw text");
                             HttpResponse::Ok().content_type("text/plain").body(text)
                         }
                     }
                 }
                 Err(e) => {
-                    error!("Failed to get response text: {}", e);
+                    error!("Failed to get response text: {e}");
                     HttpResponse::InternalServerError().json(json!({
                         "error": format!("Failed to read response: {}", e)
                     }))
@@ -308,7 +303,7 @@ async fn proxy_handler(
             }
         }
         Err(e) => {
-            error!("Request failed: {}", e);
+            error!("Request failed: {e}");
             HttpResponse::InternalServerError().json(json!({
                 "error": format!("Request failed: {}", e)
             }))

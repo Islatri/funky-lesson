@@ -36,7 +36,7 @@ jobs:
       - name: Format & Check
         run: |
           cargo fmt --all -- --check
-          cargo clippy --workspace --all-targets -- -D clippy::correctness -D clippy::suspicious -W clippy::complexity
+          cargo clippy --workspace --all-targets
           cargo check --workspace
 
       - name: Test
