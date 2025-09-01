@@ -12,8 +12,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  TRUNK_VERSION: 0.21.4
-  TAURI_CLI_VERSION: 2.8.4
+  TRUNK_VERSION: 0.21.14
+  TAURI_CLI_VERSION: 2.8.3
 
 jobs:
   quality:
@@ -81,7 +81,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      # 🚀 Windows 使用预编译，其他平台正常安装
+      # 🚀 所有平台都使用预编译版本
       - name: Cache trunk binary
         id: cache-trunk
         uses: actions/cache@v4
@@ -90,19 +90,31 @@ jobs:
             ~/.cargo/bin/trunk${{ runner.os == 'Windows' && '.exe' || '' }}
           key: trunk-binary-${{ runner.os }}-${{ env.TRUNK_VERSION }}
 
-      - name: Install trunk (Windows - precompiled)
-        if: runner.os == 'Windows' && steps.cache-trunk.outputs.cache-hit != 'true'
+      - name: Install trunk (precompiled)
+        if: steps.cache-trunk.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-pc-windows-msvc.zip" -o trunk.zip
-          unzip trunk.zip
           mkdir -p ~/.cargo/bin
-          mv trunk.exe ~/.cargo/bin/
-
-      - name: Install trunk (Unix - compile from source)
-        if: runner.os != 'Windows' && steps.cache-trunk.outputs.cache-hit != 'true'
-        run: |
-          cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
+          
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # Windows 预编译版本
+            curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-pc-windows-msvc.zip" -o trunk.zip
+            unzip trunk.zip
+            mv trunk.exe ~/.cargo/bin/
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            # macOS 预编译版本
+            curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-apple-darwin.tar.gz" -o trunk.tar.gz
+            tar -xzf trunk.tar.gz
+            mv trunk ~/.cargo/bin/
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            # Linux 预编译版本
+            curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-unknown-linux-gnu.tar.gz" -o trunk.tar.gz
+            tar -xzf trunk.tar.gz
+            mv trunk ~/.cargo/bin/
+          fi
+          
+          # 验证安装
+          ~/.cargo/bin/trunk --version
 
       - name: Build frontend
         run: trunk build --release
@@ -160,10 +172,15 @@ jobs:
 
       - name: Install tools
         run: |
+          # 🚀 Android 构建也使用预编译版本的 trunk
           if [ ! -f ~/.cargo/bin/trunk ]; then
-            # Linux 上编译安装
-            cargo install --version ${{ env.TRUNK_VERSION }} trunk --locked
+            mkdir -p ~/.cargo/bin
+            curl -L "https://github.com/trunk-rs/trunk/releases/download/v${{ env.TRUNK_VERSION }}/trunk-x86_64-unknown-linux-gnu.tar.gz" -o trunk.tar.gz
+            tar -xzf trunk.tar.gz
+            mv trunk ~/.cargo/bin/
+            ~/.cargo/bin/trunk --version
           fi
+          
           if [ ! -f ~/.cargo/bin/cargo-tauri ]; then
             cargo install --version ${{ env.TAURI_CLI_VERSION }} tauri-cli --locked
           fi
