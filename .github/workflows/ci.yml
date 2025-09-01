@@ -63,11 +63,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
+      # ❌ 移除 Node.js 设置 - Trunk 不需要
+      # - name: Setup node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
+      #     cache: 'npm'
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -89,7 +90,7 @@ jobs:
         id: cache-trunk
         uses: actions/cache@v4
         with:
-          path: ~/.cargo/bin/trunk
+          path: ${{ runner.os == 'Windows' && '~/.cargo/bin/trunk.exe' || '~/.cargo/bin/trunk' }}
           key: trunk-${{ runner.os }}-${{ env.TRUNK_VERSION }}
 
       - name: Install trunk
@@ -106,7 +107,6 @@ jobs:
         with:
           args: ${{ matrix.args }}
 
-  # 🔐 Android 构建 - 包含签名配置
   build-android:
     name: Android Build  
     if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
@@ -134,11 +134,12 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
+      # ❌ 移除 Node.js 设置 - Android 构建也不需要
+      # - name: Setup Node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
+      #     cache: 'npm'
 
       - name: Cache Android NDK
         uses: actions/cache@v4
@@ -186,23 +187,18 @@ jobs:
           storeFile=${{ github.workspace }}/android-signing/app-release.jks
           EOF
 
-      # 🏗️ 构建签名的 APK
       - name: Build Android APK (Release & Signed)
         run: |
-          # 构建 release APK (会自动使用 key.properties 进行签名)
           cargo tauri android build --apk --release
         env:
           CARGO_INCREMENTAL: 1
 
-      # 🏗️ 构建 AAB (Google Play 发布格式)
       - name: Build Android AAB (Release & Signed)
         run: |
-          # 构建 AAB 格式 (Google Play 推荐)
           cargo tauri android build --aab --release
         env:
           CARGO_INCREMENTAL: 1
 
-      # 📤 上传构建产物
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -215,7 +211,6 @@ jobs:
           name: android-aab-signed
           path: src-tauri/gen/android/app/build/outputs/bundle/release/*.aab
 
-      # 🧹 清理敏感文件
       - name: Cleanup signing files
         if: always()
         run: |
