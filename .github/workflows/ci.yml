@@ -3,6 +3,8 @@ name: CI/CD
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'  # 添加标签触发条件
   pull_request:
     branches: [ main ]
   release:
@@ -42,10 +44,10 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
-  # 仅在发布时构建桌面版
+  # 在发布或标签推送时构建桌面版
   build-release:
     name: Release Build
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
     needs: quality
     strategy:
       matrix:
@@ -93,10 +95,10 @@ jobs:
           path: |
             src-tauri/target/release/bundle/**/*
 
-  # 仅在发布时构建Android版
+  # 在发布或标签推送时构建Android版
   build-android:
     name: Android Build
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
     needs: quality
     runs-on: ubuntu-latest
     steps:
@@ -136,18 +138,23 @@ jobs:
           name: android-apk
           path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
 
-  # 发布
+  # 发布 - 只在标签推送时运行，不在 release 事件时运行
   release:
     name: Release
-    if: github.event_name == 'release'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build-release, build-android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
 
-      - uses: softprops/action-gh-release@v1
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
           files: |
             */**/*
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
