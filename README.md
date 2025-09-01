@@ -1,5 +1,9 @@
 <!-- markdownlint-disable MD033 MD036 MD041 MD051 MD009 MD032 MD029-->
 
+<p align="center" dir="auto">
+    <img style="height:240px;width:240px" src="./public/Irena720.png" alt="FunkyLesson"/>
+</p>
+
 <div align="center">
 
 # 🚀 FunkyLesson

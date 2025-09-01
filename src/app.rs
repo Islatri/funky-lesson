@@ -279,13 +279,14 @@ pub async fn get_courses(app_state: &AppState) -> Result<()> {
         .ok_or_else(|| ErrorKind::ParseError("No batch id selected".to_string()))?;
 
     let selected = gloo::get_selected_courses_proxy(&token, &batch_id).await?;
-    let favorite = gloo::get_favorite_courses_proxy(&token, &batch_id).await?;
 
     let selected_courses: Vec<CourseInfo> = if selected["code"] == 200 {
         serde_json::from_value(selected["data"].clone())?
     } else {
         return Err(ErrorKind::CourseError(selected["msg"].to_string()).into());
     };
+
+    let favorite = gloo::get_favorite_courses_proxy(&token, &batch_id).await?;
 
     let favorite_courses: Vec<CourseInfo> = if favorite["code"] == 200 {
         serde_json::from_value(favorite["data"].clone())?
@@ -851,6 +852,15 @@ pub fn App() -> impl IntoView {
                                 <span class="text-white/70 text-sm">
                                     {move || format!("共 {} 门", app_state.get().favorite_courses.get().len())}
                                 </span>
+                            </div>
+                            <div class="text-white/70 text-sm">
+                                {move || {
+                                    if app_state.get().favorite_courses.get().is_empty() {
+                                        "若为空，则可以点左上角返回，然后再重进批次"
+                                    } else {
+                                        ""
+                                    }
+                                }}
                             </div>
                             <div class="space-y-2 max-h-40 overflow-y-auto">
                                 <For
