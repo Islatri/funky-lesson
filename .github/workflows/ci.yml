@@ -59,12 +59,20 @@ jobs:
         include:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
+            target: 'aarch64-apple-darwin'
+            artifact-name: 'macos-aarch64'
           - platform: 'macos-latest' 
             args: '--target x86_64-apple-darwin'
+            target: 'x86_64-apple-darwin'
+            artifact-name: 'macos-x86_64'
           - platform: 'ubuntu-22.04'
             args: ''
+            target: ''
+            artifact-name: 'linux'
           - platform: 'windows-latest'
             args: ''
+            target: ''
+            artifact-name: 'windows'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -128,6 +136,55 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: ${{ matrix.args }}
+          # 不自动发布，手动处理 artifacts
+          uploadReleaseAssets: false
+
+      # 收集和重命名桌面端产物
+      - name: Collect and rename artifacts
+        shell: bash
+        run: |
+          # 提取版本号（去掉 'v' 前缀）
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          
+          mkdir -p artifacts
+          
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # Windows 产物
+            find src-tauri/target/release/bundle -name "*.msi" -o -name "*.exe" | while read file; do
+              ext="${file##*.}"
+              cp "$file" "artifacts/FunkyLesson-${VERSION}-windows.${ext}"
+            done
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            # macOS 产物
+            find src-tauri/target -name "*.dmg" -o -name "*.app.tar.gz" | while read file; do
+              if [[ "$file" == *".dmg" ]]; then
+                cp "$file" "artifacts/FunkyLesson-${VERSION}-${{ matrix.artifact-name }}.dmg"
+              elif [[ "$file" == *".app.tar.gz" ]]; then
+                cp "$file" "artifacts/FunkyLesson-${VERSION}-${{ matrix.artifact-name }}.app.tar.gz"
+              fi
+            done
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            # Linux 产物
+            find src-tauri/target/release/bundle -name "*.deb" -o -name "*.AppImage" -o -name "*.tar.gz" | while read file; do
+              ext="${file##*.}"
+              if [[ "$ext" == "gz" ]]; then
+                cp "$file" "artifacts/FunkyLesson-${VERSION}-linux.tar.gz"
+              else
+                cp "$file" "artifacts/FunkyLesson-${VERSION}-linux.${ext}"
+              fi
+            done
+          fi
+          
+          # 显示收集到的文件
+          ls -la artifacts/
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.artifact-name }}
+          path: artifacts/*
+          if-no-files-found: warn
 
   build-android:
     name: Android Build  
@@ -229,17 +286,34 @@ jobs:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk-signed
-          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+      # 收集和重命名 Android 产物
+      - name: Collect and rename Android artifacts
+        run: |
+          # 提取版本号（去掉 'v' 前缀）
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          
+          mkdir -p artifacts
+          
+          # 重命名 APK
+          find src-tauri/gen/android/app/build/outputs/apk/universal/release -name "*.apk" | while read apk; do
+            cp "$apk" "artifacts/FunkyLesson-${VERSION}.apk"
+          done
+          
+          # 重命名 AAB
+          find src-tauri/gen/android/app/build/outputs/bundle/universalRelease -name "*.aab" | while read aab; do
+            cp "$aab" "artifacts/FunkyLesson-${VERSION}.aab"
+          done
+          
+          # 显示收集到的文件
+          ls -la artifacts/
 
-      - name: Upload AAB
+      - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: android-aab-signed
-          path: src-tauri/gen/android/app/build/outputs/bundle/universalRelease/*.aab
+          name: android
+          path: artifacts/*
+          if-no-files-found: error
 
       - name: Cleanup signing files
         if: always()
@@ -253,15 +327,69 @@ jobs:
     needs: [build-desktop, build-android]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Display structure of downloaded files
+        run: find release-artifacts -type f -name "*"
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          # 复制所有产物到统一目录
+          find release-artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.msi" -o -name "*.exe" -o -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" -o -name "*.tar.gz" -o -name "*.app.tar.gz" \) -exec cp {} release-files/ \;
+          
+          # 显示准备发布的文件
+          echo "=== Files to be released ==="
+          ls -la release-files/
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          
+          cat > release-notes.md << EOF
+          # FunkyLesson ${VERSION}
+          
+          ## 📦 Release Assets
+          
+          ### Desktop Applications
+          EOF
+          
+          # 列出桌面端文件
+          for file in release-files/*.{msi,exe,dmg,deb,AppImage} release-files/*.{tar.gz,app.tar.gz}; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "- **${filename}**" >> release-notes.md
+            fi
+          done
+          
+          cat >> release-notes.md << EOF
+          
+          ### Android Applications
+          EOF
+          
+          # 列出 Android 文件
+          for file in release-files/*.{apk,aab}; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              echo "- **${filename}**" >> release-notes.md
+            fi
+          done
+          
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          cat release-notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            **/*
+          files: release-files/*
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
+          body: ${{ steps.release-notes.outputs.RELEASE_NOTES }}
           draft: false
           prerelease: false
         env:

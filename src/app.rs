@@ -617,266 +617,283 @@ pub fn App() -> impl IntoView {
     let batch_list = move || app_state.get().batch_list.get();
 
     view! {
-        <div
-            id="app"
-            class="min-h-screen mx-auto w-full relative flex flex-col items-center justify-end p-4 sm:p-6"
-            style="background: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05)), url('./public/91403676_p0_z2.jpg'); background-size: cover; background-position: center 20%; background-attachment: fixed;"
+            <div
+                id="app"
+                class="min-h-screen mx-auto w-full relative flex flex-col items-center justify-end p-4 sm:p-6"
+                style="background: linear-gradient(135deg, rgba(0,0,0,0.1), rgba(0,0,0,0.05)), url('./public/91403676_p0_z2.jpg'); background-size: cover; background-position: center 20%; background-attachment: fixed;"
+            >
+
+    {/* Logo和标题 - 独立的小卡片 */}
+    <div class="text-center mb-6 bg-black/30 backdrop-blur-sm rounded-2xl p-3 border border-white/20"
+        class:hidden={move || step.get() != 1}
         >
-            {/* Logo和标题 - 独立的小卡片 */}
-            <div class="text-center mb-6 bg-black/30 backdrop-blur-sm rounded-2xl p-3 border border-white/20"
-                class:hidden={move || step.get() != 1}
-                >
-                <h1 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg">
-                    "FunkyLesson自动抢课！(๑˃ᴗ˂)ﻭ"
-                </h1>
-                <div class="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mt-2"></div>
-            </div>
+        <h1 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg">
+            "FunkyLesson自动抢课！(๑˃ᴗ˂)ﻭ"
+        </h1>
 
-            // 登录表单
-            <div class="w-full max-w-sm sm:max-w-md mx-auto" class:hidden={move || step.get() != 1}>
-                <form class="mb-4 space-y-3" on:submit=handle_login>
-                    <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-white/80 mb-2">
-                                学号 <span class="text-red-400">*</span>
-                            </label>
-                            <input
-                                id="username"
-                                class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
-                                type="text"
-                                placeholder="请输入学号"
-                                on:input=move |ev| set_username.set(event_target_value(&ev))
-                            />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-white/80 mb-2">
-                                密码 <span class="text-red-400">*</span>
-                            </label>
-                            <input
-                                id="password"
-                                class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
-                                type="password"
-                                placeholder="请输入密码(默认是身份证后6位)"
-                                on:input=move |ev| set_password.set(event_target_value(&ev))
-                            />
-                        </div>
+        {/* 简单的 GitHub 提示 */}
+        <div class="mt-1">
+            <a
+                href="https://github.com/Islatri/funky-lesson"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs transition-colors duration-200"
+            >
+                {/* GitHub 图标 */}
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span>喜欢的话就给颗星吧~</span>
+            </a>
+        </div>
+        <div class="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mt-1"></div>
 
-                        // 验证码部分
-                        <div>
-                            <label class="block text-xs font-medium text-white/80 mb-2">验证码</label>
-                            <div class="flex items-center gap-2 mb-3">
-
+        </div>
+                // 登录表单
+                <div class="w-full max-w-sm sm:max-w-md mx-auto" class:hidden={move || step.get() != 1}>
+                    <form class="mb-4 space-y-3" on:submit=handle_login>
+                        <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-white/80 mb-2">
+                                    学号 <span class="text-red-400">*</span>
+                                </label>
                                 <input
-                                    type="text"
+                                    id="username"
                                     class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
-                                    placeholder="请输入验证码"
-                                    on:input=move |ev| set_captcha.set(event_target_value(&ev))
+                                    type="text"
+                                    placeholder="请输入学号"
+                                    on:input=move |ev| set_username.set(event_target_value(&ev))
                                 />
-                                <img
-                                    src={move || captcha_image_src.get()}
-                                    alt="验证码"
-                                    class="h-8 border border-white/20 rounded flex-shrink-0"
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-white/80 mb-2">
+                                    密码 <span class="text-red-400">*</span>
+                                </label>
+                                <input
+                                    id="password"
+                                    class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
+                                    type="password"
+                                    placeholder="请输入密码(默认是身份证后6位)"
+                                    on:input=move |ev| set_password.set(event_target_value(&ev))
                                 />
+                            </div>
+
+                            // 验证码部分
+                            <div>
+                                <label class="block text-xs font-medium text-white/80 mb-2">验证码</label>
+                                <div class="flex items-center gap-2 mb-3">
+
+                                    <input
+                                        type="text"
+                                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
+                                        placeholder="请输入验证码"
+                                        on:input=move |ev| set_captcha.set(event_target_value(&ev))
+                                    />
+                                    <img
+                                        src={move || captcha_image_src.get()}
+                                        alt="验证码"
+                                        class="h-8 border border-white/20 rounded flex-shrink-0"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="bg-green-500/80 hover:bg-green-600/80 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition-all duration-300 whitespace-nowrap"
+                                        on:click=move |_| handle_get_captcha(())
+                                    >
+                                        "刷新"
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-row items-center justify-between gap-3">
+                                <p class={move || {
+                                    let base = "text-xs sm:text-sm font-mono break-words leading-relaxed flex-1";
+                                    if status_message.get().contains("成功") {
+                                        format!("{base} text-green-300")
+                                    } else if status_message.get().contains("失败") {
+                                        format!("{base} text-red-300")
+                                    } else if status_message.get().contains("请输入") {
+                                        format!("{base} text-orange-300")
+                                    } else {
+                                        format!("{base} text-white/70")
+                                    }
+                                }}>
+                                    {move || status_message.get()}
+                                </p>
+
                                 <button
-                                    type="button"
-                                    class="bg-green-500/80 hover:bg-green-600/80 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition-all duration-300 whitespace-nowrap"
-                                    on:click=move |_| handle_get_captcha(())
+                                    class="bg-blue-500/80 hover:bg-blue-600/80 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    type="submit"
                                 >
-                                    "刷新"
+                                    "登录"
                                 </button>
                             </div>
                         </div>
-
-                        <div class="flex flex-row items-center justify-between gap-3">
-                            <p class={move || {
-                                let base = "text-xs sm:text-sm font-mono break-words leading-relaxed flex-1";
-                                if status_message.get().contains("成功") {
-                                    format!("{base} text-green-300")
-                                } else if status_message.get().contains("失败") {
-                                    format!("{base} text-red-300")
-                                } else if status_message.get().contains("请输入") {
-                                    format!("{base} text-orange-300")
-                                } else {
-                                    format!("{base} text-white/70")
-                                }
-                            }}>
-                                {move || status_message.get()}
-                            </p>
-
-                            <button
-                                class="bg-blue-500/80 hover:bg-blue-600/80 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                type="submit"
-                            >
-                                "登录"
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            // 批次选择
-            <div class="w-full max-w-sm sm:max-w-md mx-auto" class:hidden={move || step.get() != 2}>
-                <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-4">
-                    // Back button and title
-                    <div class="flex items-center justify-between">
-                        <button
-                            class="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors duration-300"
-                            on:click=handle_back
-                        >
-                            <span class="text-lg">"←"</span>
-                            "返回"
-                        </button>
-                        <div class="text-center flex-1">
-                            <h2 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg">"选择批次"</h2>
-                        </div>
-                        <div class="w-12"></div> // Spacer for centering
-                    </div>
-                    <div class="w-8 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto"></div>
-
-                    <div class="space-y-2">
-                        <For
-                            each=move || batch_list().into_iter().enumerate()
-                            key=|(_idx, batch)| batch.code.clone()
-                            children=move |(idx, batch)| {
-                                let handle_select = handle_batch_select;
-                                view! {
-                                    <button
-                                        class="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        on:click=move |_| handle_select(idx)
-                                        disabled=move || is_enrolling.get()
-                                    >
-                                        <div class="font-medium">{batch.name}</div>
-                                        <div class="text-xs text-white/70 mt-1">{format!("批次代码: {} | 批次 {}", batch.code, idx)}</div>
-                                    </button>
-                                }
-                            }
-                        />
-                    </div>
+                    </form>
                 </div>
-            </div>
 
-            // 课程选择和抢课
-            <div class="w-full max-w-4xl mx-auto" class:hidden={move || step.get() != 3}>
-                <div class="space-y-4">
-
-                    // Back button and title with request statistics
-                    <div class="text-center mb-4">
-                        <div class="flex items-center justify-between mb-2">
+                // 批次选择
+                <div class="w-full max-w-sm sm:max-w-md mx-auto" class:hidden={move || step.get() != 2}>
+                    <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-4">
+                        // Back button and title
+                        <div class="flex items-center justify-between">
                             <button
                                 class="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors duration-300"
                                 on:click=handle_back
-                                disabled=move || is_enrolling.get()
                             >
                                 <span class="text-lg">"←"</span>
                                 "返回"
                             </button>
-                            <h2 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg flex-1">"抢课控制台"</h2>
-                            <div class="w-12"></div> // Spacer
-                        </div>
-                        <div class="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mb-3"></div>
-                        <div class="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                            <span class="text-white/80 text-sm">"总请求次数: "</span>
-                            <span class="text-blue-300 font-bold text-lg">
-                                {move || app_state.get().enrollment_status.get().total_requests}
-                            </span>
-                        </div>
-                    </div>
-
-                    // 课程状态输出
-                    <div class="bg-black/80 backdrop-blur-sm text-green-400 p-4 rounded-xl h-48 sm:h-64 overflow-y-auto font-mono border border-white/20">
-                        <div class="text-xs text-white/60 mb-2 uppercase tracking-wide">"实时状态"</div>
-                        <For
-                            each=move || app_state.get().enrollment_status.get().course_statuses
-                            key=|status| status.clone()
-                            children=move |status| {
-                                view! {
-                                    <div class="whitespace-pre-wrap text-sm leading-relaxed">{status}</div>
-                                }
-                            }
-                        />
-                    </div>
-
-                    // 控制按钮
-                    <div class="flex flex-row justify-center gap-3 sm:gap-4">
-                        <button
-                            class="bg-green-500/80 hover:bg-green-600/80 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            on:click=handle_enroll
-                            disabled=move || is_enrolling.get()
-                        >
-                            "🚀 开始抢课"
-                        </button>
-                        <button
-                            class="bg-red-500/80 hover:bg-red-600/80 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            on:click=handle_stop_enroll
-                            disabled=move || !is_enrolling.get()
-                        >
-                            "⏹️ 停止抢课"
-                        </button>
-                    </div>
-
-                    // 课程列表
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-                        <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-                                <h3 class="text-lg font-bold text-white">"已选课程"</h3>
-                                <span class="text-white/70 text-sm">
-                                    {move || format!("共 {} 门", app_state.get().selected_courses.get().len())}
-                                </span>
+                            <div class="text-center flex-1">
+                                <h2 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg">"选择批次"</h2>
                             </div>
-                            <div class="space-y-2 max-h-40 overflow-y-auto">
-                                <For
-                                    each=move || app_state.get().selected_courses.get()
-                                    key=|course| course.JXBID.clone()
-                                    children=move |course| {
-                                        view! {
-                                            <div class="p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
-                                                <div class="font-medium text-white text-sm">{course.KCM}</div>
-                                                <div class="text-xs text-white/70 mt-1">
-                                                    {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
-                                                </div>
-                                            </div>
-                                        }
+                            <div class="w-12"></div> // Spacer for centering
+                        </div>
+                        <div class="w-8 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto"></div>
+
+                        <div class="space-y-2">
+                            <For
+                                each=move || batch_list().into_iter().enumerate()
+                                key=|(_idx, batch)| batch.code.clone()
+                                children=move |(idx, batch)| {
+                                    let handle_select = handle_batch_select;
+                                    view! {
+                                        <button
+                                            class="w-full text-left px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            on:click=move |_| handle_select(idx)
+                                            disabled=move || is_enrolling.get()
+                                        >
+                                            <div class="font-medium">{batch.name}</div>
+                                            <div class="text-xs text-white/70 mt-1">{format!("批次代码: {} | 批次 {}", batch.code, idx)}</div>
+                                        </button>
                                     }
-                                />
+                                }
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                // 课程选择和抢课
+                <div class="w-full max-w-4xl mx-auto" class:hidden={move || step.get() != 3}>
+                    <div class="space-y-4">
+
+                        // Back button and title with request statistics
+                        <div class="text-center mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <button
+                                    class="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors duration-300"
+                                    on:click=handle_back
+                                    disabled=move || is_enrolling.get()
+                                >
+                                    <span class="text-lg">"←"</span>
+                                    "返回"
+                                </button>
+                                <h2 class="text-lg sm:text-xl font-bold text-white drop-shadow-lg flex-1">"抢课控制台"</h2>
+                                <div class="w-12"></div> // Spacer
+                            </div>
+                            <div class="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mx-auto mb-3"></div>
+                            <div class="bg-black/30 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                                <span class="text-white/80 text-sm">"总请求次数: "</span>
+                                <span class="text-blue-300 font-bold text-lg">
+                                    {move || app_state.get().enrollment_status.get().total_requests}
+                                </span>
                             </div>
                         </div>
 
-                        <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
-                                <h3 class="text-lg font-bold text-white">"待选课程（即收藏课程）"</h3>
-                                <span class="text-white/70 text-sm">
-                                    {move || format!("共 {} 门", app_state.get().favorite_courses.get().len())}
-                                </span>
+                        // 课程状态输出
+                        <div class="bg-black/80 backdrop-blur-sm text-green-400 p-4 rounded-xl h-48 sm:h-64 overflow-y-auto font-mono border border-white/20">
+                            <div class="text-xs text-white/60 mb-2 uppercase tracking-wide">"实时状态"</div>
+                            <For
+                                each=move || app_state.get().enrollment_status.get().course_statuses
+                                key=|status| status.clone()
+                                children=move |status| {
+                                    view! {
+                                        <div class="whitespace-pre-wrap text-sm leading-relaxed">{status}</div>
+                                    }
+                                }
+                            />
+                        </div>
+
+                        // 控制按钮
+                        <div class="flex flex-row justify-center gap-3 sm:gap-4">
+                            <button
+                                class="bg-green-500/80 hover:bg-green-600/80 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                on:click=handle_enroll
+                                disabled=move || is_enrolling.get()
+                            >
+                                "🚀 开始抢课"
+                            </button>
+                            <button
+                                class="bg-red-500/80 hover:bg-red-600/80 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                on:click=handle_stop_enroll
+                                disabled=move || !is_enrolling.get()
+                            >
+                                "⏹️ 停止抢课"
+                            </button>
+                        </div>
+
+                        // 课程列表
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+                            <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                                    <h3 class="text-lg font-bold text-white">"已选课程"</h3>
+                                    <span class="text-white/70 text-sm">
+                                        {move || format!("共 {} 门", app_state.get().selected_courses.get().len())}
+                                    </span>
+                                </div>
+                                <div class="space-y-2 max-h-40 overflow-y-auto">
+                                    <For
+                                        each=move || app_state.get().selected_courses.get()
+                                        key=|course| course.JXBID.clone()
+                                        children=move |course| {
+                                            view! {
+                                                <div class="p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
+                                                    <div class="font-medium text-white text-sm">{course.KCM}</div>
+                                                    <div class="text-xs text-white/70 mt-1">
+                                                        {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
+                                                    </div>
+                                                </div>
+                                            }
+                                        }
+                                    />
+                                </div>
                             </div>
-                            <div class="space-y-2 max-h-40 overflow-y-auto">
-                                <For
-                                    each=move || app_state.get().favorite_courses.get()
-                                    key=|course| course.JXBID.clone()
-                                    children=move |course| {
-                                        view! {
-                                            <div class="p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex-1">
-                                                        <div class="font-medium text-white text-sm">{course.KCM}</div>
-                                                        <div class="text-xs text-white/70 mt-1">
-                                                            {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
+
+                            <div class="bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+                                    <h3 class="text-lg font-bold text-white">"待选课程（即收藏课程）"</h3>
+                                    <span class="text-white/70 text-sm">
+                                        {move || format!("共 {} 门", app_state.get().favorite_courses.get().len())}
+                                    </span>
+                                </div>
+                                <div class="space-y-2 max-h-40 overflow-y-auto">
+                                    <For
+                                        each=move || app_state.get().favorite_courses.get()
+                                        key=|course| course.JXBID.clone()
+                                        children=move |course| {
+                                            view! {
+                                                <div class="p-3 bg-blue-500/20 border border-blue-400/30 rounded-lg">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex-1">
+                                                            <div class="font-medium text-white text-sm">{course.KCM}</div>
+                                                            <div class="text-xs text-white/70 mt-1">
+                                                                {format!("教师: {} | ID: {}", course.SKJS, course.JXBID)}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            }
                                         }
-                                    }
-                                />
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            // Toast Container
-            <ToastContainer />
-        </div>
-    }
+                // Toast Container
+                <ToastContainer />
+            </div>
+        }
 }
