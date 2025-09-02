@@ -289,6 +289,8 @@ cargo tauri android build
 - **[yy4550](https://github.com/yy4550)** - 我的室友，感谢他的陪伴与试用 
 - **[MoonWX](https://github.com/MoonWX)** - 复刻自 H4ckF0rFun 的 Fuck-Lesson Python 脚本
 - **[H4ckF0rFun](https://github.com/H4ckF0rFun)** - 原始选课脚本 Fuck-Lesson 创作者
+- **[背景图片](https://www.pixiv.net/artworks/91403676)** - pid是91403676，很有张力的ジャッジメント
+- **[应用图标](https://www.pixiv.net/artworks/96308619)** - pid是96308619，可爱的屑魔女
 - **Rust 社区** - 提供优秀的生态系统
 - **Tauri 团队** - 现代化的桌面应用框架
 - **Leptos 社区** - 强大的 Rust Web 框架
