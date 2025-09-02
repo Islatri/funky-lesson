@@ -1,3 +1,6 @@
+mod external_browser;
+mod external_link;
+
 mod app;
 use app::*;
 

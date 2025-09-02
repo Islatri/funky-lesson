@@ -344,41 +344,113 @@ jobs:
           # 显示准备发布的文件
           echo "=== Files to be released ==="
           ls -la release-files/
-
-      - name: Generate release notes
+      - name: Generate checksums and release notes
         id: release-notes
         run: |
           VERSION="${{ github.ref_name }}"
           
-          cat > release-notes.md << EOF
+          # 生成 SHA256 校验和文件
+          cd release-files
+          if [ -n "$(ls -A . 2>/dev/null)" ]; then
+            sha256sum * > SHA256SUMS.txt
+          else
+            echo "No files found to generate checksums" > SHA256SUMS.txt
+          fi
+          cd ..
+          
+          cat > release-notes.md << 'EOF'
           # FunkyLesson ${VERSION}
           
           ## 📦 Release Assets
           
           ### Desktop Applications
+          
+          | File | SHA256 |
+          |------|--------|
           EOF
           
-          # 列出桌面端文件
-          for file in release-files/*.{msi,exe,dmg,deb,AppImage} release-files/*.{tar.gz,app.tar.gz}; do
+          # 替换版本号
+          sed -i "s/\${VERSION}/$VERSION/g" release-notes.md
+          
+          # 桌面端文件处理 - 使用更安全的方法
+          desktop_files_found=false
+          for pattern in "*.msi" "*.exe" "*.dmg" "*.deb" "*.AppImage" "*.tar.gz"; do
+            for file in release-files/$pattern; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                # 检查是否是 app.tar.gz（macOS app bundle）
+                if [[ "$filename" == *".app.tar.gz" ]] || [[ "$filename" != *".app.tar.gz" && "$filename" == *".tar.gz" ]]; then
+                  checksum=$(cd release-files && sha256sum "$filename" | cut -d' ' -f1)
+                  echo "| **${filename}** | \`${checksum}\` |" >> release-notes.md
+                  desktop_files_found=true
+                fi
+              fi
+            done
+          done
+          
+          # 特殊处理 .app.tar.gz 文件
+          for file in release-files/*.app.tar.gz; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
-              echo "- **${filename}**" >> release-notes.md
+              checksum=$(cd release-files && sha256sum "$filename" | cut -d' ' -f1)
+              echo "| **${filename}** | \`${checksum}\` |" >> release-notes.md
+              desktop_files_found=true
             fi
           done
           
-          cat >> release-notes.md << EOF
+          if [ "$desktop_files_found" = false ]; then
+            echo "| No desktop files found | - |" >> release-notes.md
+          fi
+          
+          cat >> release-notes.md << 'EOF'
           
           ### Android Applications
+          
+          | File | SHA256 |
+          |------|--------|
           EOF
           
-          # 列出 Android 文件
-          for file in release-files/*.{apk,aab}; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              echo "- **${filename}**" >> release-notes.md
-            fi
+          # Android 文件处理
+          android_files_found=false
+          for pattern in "*.apk" "*.aab"; do
+            for file in release-files/$pattern; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                checksum=$(cd release-files && sha256sum "$filename" | cut -d' ' -f1)
+                echo "| **${filename}** | \`${checksum}\` |" >> release-notes.md
+                android_files_found=true
+              fi
+            done
           done
           
+          if [ "$android_files_found" = false ]; then
+            echo "| No Android files found | - |" >> release-notes.md
+          fi
+          
+          cat >> release-notes.md << 'EOF'
+          
+          ## 🔐 File Integrity Verification
+          
+          You can verify the integrity of downloaded files using SHA256 checksums:
+          
+          ```bash
+          # On Linux/macOS
+          sha256sum -c SHA256SUMS.txt
+          
+          # On Windows (PowerShell)
+          Get-FileHash -Algorithm SHA256 <filename>
+          ```
+          
+          All checksums are also available in the `SHA256SUMS.txt` file.
+          EOF
+          
+          # 调试信息
+          echo "=== Generated release notes ==="
+          cat release-notes.md
+          echo "=== Available files ==="
+          ls -la release-files/ || echo "No files directory found"
+          
+          # 设置输出（使用文件方式避免特殊字符问题）
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
           cat release-notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
