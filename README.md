@@ -280,15 +280,15 @@ cargo tauri android build
 ## 🔗 相关项目
 
 - **[funky_lesson_core](https://github.com/ZoneHerobrine/funky_lesson_core)**: 核心选课逻辑库
-- **[Fuck-Lesson](https://github.com/MoonWX/Fuck-Lesson)**: 原始 Python 实现 (by MoonWX)
+- **[Fuck-Lesson](https://github.com/H4ckF0rFun/Fuck-Lesson)**: 原始 Python 实现 (by H4ckF0rFun)
 
 ## 💖 致谢
 
 特别感谢以下项目和开发者：
 
 - **[yy4550](https://github.com/yy4550)** - 我的室友，感谢他的陪伴与试用 
-- **[MoonWX](https://github.com/MoonWX)** - 基于 H4ckF0rFun 的 Fuck-Lesson Python 脚本
-- **[H4ckF0rFun](https://github.com/H4ckF0rFun)** - 原始选课脚本创作者
+- **[MoonWX](https://github.com/MoonWX)** - 复刻自 H4ckF0rFun 的 Fuck-Lesson Python 脚本
+- **[H4ckF0rFun](https://github.com/H4ckF0rFun)** - 原始选课脚本 Fuck-Lesson 创作者
 - **Rust 社区** - 提供优秀的生态系统
 - **Tauri 团队** - 现代化的桌面应用框架
 - **Leptos 社区** - 强大的 Rust Web 框架
