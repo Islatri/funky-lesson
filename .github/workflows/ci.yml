@@ -151,13 +151,13 @@ jobs:
           
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # Windows 产物
-            find src-tauri/target/release/bundle -name "*.msi" -o -name "*.exe" | while read file; do
+            find target/release/bundle -name "*.msi" -o -name "*.exe" | while read file; do
               ext="${file##*.}"
               cp "$file" "artifacts/FunkyLesson-${VERSION}-windows.${ext}"
             done
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             # macOS 产物
-            find src-tauri/target -name "*.dmg" -o -name "*.app.tar.gz" | while read file; do
+            find target -name "*.dmg" -o -name "*.app.tar.gz" | while read file; do
               if [[ "$file" == *".dmg" ]]; then
                 cp "$file" "artifacts/FunkyLesson-${VERSION}-${{ matrix.artifact-name }}.dmg"
               elif [[ "$file" == *".app.tar.gz" ]]; then
@@ -166,7 +166,7 @@ jobs:
             done
           elif [[ "${{ runner.os }}" == "Linux" ]]; then
             # Linux 产物
-            find src-tauri/target/release/bundle -name "*.deb" -o -name "*.AppImage" -o -name "*.tar.gz" | while read file; do
+            find target/release/bundle -name "*.deb" -o -name "*.AppImage" -o -name "*.tar.gz" | while read file; do
               ext="${file##*.}"
               if [[ "$ext" == "gz" ]]; then
                 cp "$file" "artifacts/FunkyLesson-${VERSION}-linux.tar.gz"
